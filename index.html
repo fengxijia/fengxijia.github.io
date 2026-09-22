@@ -99,7 +99,7 @@
     text-transform:uppercase;color:var(--stable);min-width:74px;text-align:right;
   }
   .ctl output.bad{color:var(--amber);}
-  input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:20px;background:transparent;margin:0;cursor:grab;}
+  input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:28px;background:transparent;margin:0;cursor:grab;touch-action:none;}
   input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--line-2);border-radius:2px;}
   input[type=range]::-moz-range-track{height:2px;background:var(--line-2);border-radius:2px;}
   input[type=range]::-webkit-slider-thumb{
@@ -291,6 +291,10 @@
     .tracks .tt{white-space:normal;}
     .tracks .ta{grid-column:2;text-align:left;white-space:normal;}
     footer{justify-content:flex-start;gap:8px 18px;padding:20px 6px 8px;}
+    .ctl{max-width:none;gap:10px;}
+    input[type=range]{height:40px;}
+    input[type=range]::-webkit-slider-thumb{width:22px;height:22px;margin-top:-10px;}
+    input[type=range]::-moz-range-thumb{width:22px;height:22px;}
   }
 </style>
 
@@ -619,7 +623,17 @@
     new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85 }));
   net.add(lines);
 
-  var LOW = new THREE.Color(0x4A5A8C), HIGH = new THREE.Color(0xFFC96B), STRANGER = new THREE.Color(0x2A3140);
+  // Four mood tiers, same thresholds as the word under the slider. One colour per tier,
+  // so the dots and the word always match.
+  var TIERS = [
+    { word: "drained",    hex: 0x4A5A8C, css: "#6F80B3", glow: 0.30, size: 0.020 },
+    { word: "getting by", hex: 0x9B7BE0, css: "#A78BE0", glow: 0.40, size: 0.026 },
+    { word: "lighter",    hex: 0xE2C15A, css: "#E9D48F", glow: 0.45, size: 0.031 },
+    { word: "bright",     hex: 0xFFB020, css: "#FFC24D", glow: 0.55, size: 0.036 }
+  ];
+  function tier(mood) { return mood < 0.3 ? 0 : mood < 0.55 ? 1 : mood < 0.8 ? 2 : 3; }
+  var TIER_COLORS = TIERS.map(function(t){ return new THREE.Color(t.hex); });
+  var STRANGER = new THREE.Color(0x2A3140);
   var TIE_LOW = new THREE.Color(0x2C3A57), TIE_HIGH = new THREE.Color(0x7A6236);
   var cc = new THREE.Color();
   function paint(res) {
@@ -630,15 +644,14 @@
         dots[n].scale.setScalar(0.013);
         continue;
       }
-      var mood = res.mood[n];
-      cc.copy(LOW).lerp(HIGH, mood);
-      mat.color.copy(cc); mat.emissive.copy(cc); mat.emissiveIntensity = 0.35 + 0.65*mood;
-      dots[n].scale.setScalar(n === ME ? 0.052 : 0.022 + 0.014*mood);
+      var tr = TIERS[tier(res.mood[n])], col = TIER_COLORS[tier(res.mood[n])];
+      mat.color.copy(col).multiplyScalar(0.55); mat.emissive.copy(col); mat.emissiveIntensity = tr.glow;
+      dots[n].scale.setScalar(n === ME ? 0.052 : tr.size);
     }
     for (var q = 0; q < res.edges.length; q++) {
       var a = res.edges[q][0], b = res.edges[q][1];
       lp.set([pos[a].x,pos[a].y,pos[a].z,pos[b].x,pos[b].y,pos[b].z], q*6);
-      cc.copy(TIE_LOW).lerp(TIE_HIGH, (res.mood[a]+res.mood[b])/2);
+      cc.copy(TIE_LOW).lerp(TIE_HIGH, Math.min(tier(res.mood[a]), tier(res.mood[b])) / 3);
       lc.set([cc.r,cc.g,cc.b,cc.r,cc.g,cc.b], q*6);
     }
     lineGeo.setDrawRange(0, res.edges.length * 2);
@@ -647,13 +660,12 @@
   }
 
   var slider = document.getElementById("friends"), verdict = document.getElementById("verdict");
-  function word(mood) { return mood < 0.3 ? "drained" : mood < 0.55 ? "getting by" : mood < 0.8 ? "lighter" : "bright"; }
   function run(count) {
     var res = simulate(count);
     paint(res);
-    var me = res.mood[ME];
-    verdict.textContent = word(me);
-    verdict.className = me < 0.3 ? "bad" : "";
+    var tr = TIERS[tier(res.mood[ME])];
+    verdict.textContent = tr.word;
+    verdict.style.color = tr.css;
   }
   slider.addEventListener("input", function(){ run(+slider.value); });
   run(+slider.value);
