@@ -81,7 +81,13 @@
 
   /* ---------- the 3D card ---------- */
   .c-stage{display:flex;flex-direction:column;min-height:430px;padding:0;}
-  .stage-slot{flex:1;min-height:250px;}
+  .stage-slot{flex:1;min-height:250px;position:relative;}
+  .me-tag{
+    position:absolute;left:50%;top:50%;transform:translate(18px,-26px);
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--faint);pointer-events:none;
+  }
+  .ctl label{min-width:82px;}
   .stage-foot{padding:0 26px 24px;text-align:center;}
   .stage-foot h3{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 0 5px;}
   .stage-foot p{color:var(--muted);font-size:13.5px;margin:0 0 16px;}
@@ -172,8 +178,26 @@
   figure.gl figcaption b{color:var(--accent);font-weight:700;letter-spacing:.11em;text-transform:uppercase;white-space:nowrap;}
 
   /* ---------- projects ---------- */
-  .projects{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px;}
-  @media (max-width:1040px){ .projects{grid-template-columns:1fr;gap:26px;} }
+  .built-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .built-head h2{margin-bottom:0;}
+  .strip-nav{display:flex;gap:6px;}
+  .strip-nav button{
+    width:32px;height:32px;border-radius:50%;border:1px solid var(--line-2);background:transparent;
+    color:var(--muted);font-size:15px;line-height:1;cursor:pointer;display:grid;place-items:center;
+    transition:border-color .2s,color .2s;
+  }
+  .strip-nav button:hover{border-color:var(--faint);color:var(--ink);}
+  .strip-nav button:disabled{opacity:.3;cursor:default;}
+  .projects{
+    --pad:26px;
+    display:flex;gap:30px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;
+    padding:20px var(--pad) 4px;margin:0 calc(-1*var(--pad));scroll-padding:0 var(--pad);
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .projects::-webkit-scrollbar{display:none;}
+  .proj{flex:0 0 calc((100% - 60px)/3.12);scroll-snap-align:start;}
+  @media (max-width:1040px){ .proj{flex-basis:78%;} .projects{gap:24px;} }
+  @media (max-width:620px){ .projects{--pad:20px;} }
   .proj{display:flex;flex-direction:column;gap:9px;}
   .ph{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
   .pn{font-size:16.5px;font-weight:700;letter-spacing:-.015em;}
@@ -236,14 +260,14 @@
 
     <!-- ---------------- the live 3D card ---------------- -->
     <section class="card c-stage">
-      <div class="stage-slot" id="stage" data-scene="net"></div>
+      <div class="stage-slot" id="stage" data-scene="net"><span class="me-tag">Xijia</span></div>
       <div class="stage-foot">
         <h3>A support network, running</h3>
-        <p>η is the share of members who start unrecovered.</p>
+        <p>The dot in the middle is her. Slide to meet more people. Support flows both ways, so friends lift each other too.</p>
         <div class="ctl">
-          <label for="eta">η</label>
-          <input type="range" id="eta" min="0" max="45" value="8" step="1" aria-describedby="verdict">
-          <output id="verdict">stable</output>
+          <label for="friends" id="friends-label">6 friends</label>
+          <input type="range" id="friends" min="0" max="40" value="6" step="1" aria-describedby="verdict">
+          <output id="verdict">lighter</output>
         </div>
       </div>
     </section>
@@ -275,11 +299,6 @@
           <div><div class="t">Finished Hogwarts Legacy</div></div>
         </div>
         <div class="row">
-          <time>2026·08</time>
-          <div><div class="t">SnowballCost → EACL</div>
-            <div class="d">Submitted. What ultra-long responses cost the provider, and where a request stops paying for its GPU time.</div></div>
-        </div>
-        <div class="row">
           <time>2026·01</time>
           <div><div class="t">AAAI 2026, Oral</div>
             <div class="d">“When 🙂 Turns Hostile”. Emojis as a channel past safety alignment.</div></div>
@@ -287,7 +306,7 @@
         <div class="row">
           <time>2025-26</time>
           <div><div class="t">BeCool &amp; CoAI, Tsinghua</div>
-            <div class="d">Visiting researcher. White-box profiling of vLLM and SGLang.</div></div>
+            <div class="d">Visiting researcher.</div></div>
         </div>
       </section>
     </div>
@@ -341,8 +360,23 @@
     
 
     <section class="card s12">
-      <h2>Built</h2>
-      <div class="projects">
+      <div class="built-head">
+        <h2>Built</h2>
+        <div class="strip-nav" aria-label="Scroll projects">
+          <button type="button" id="built-prev" aria-label="Scroll left to newer projects">&#8249;</button>
+          <button type="button" id="built-next" aria-label="Scroll right to earlier projects">&#8250;</button>
+        </div>
+      </div>
+      <div class="projects" id="projects">
+
+        <div class="proj">
+          <div class="ph"><span class="pn">PaperFigureLib</span><span class="pd">since 2026·09</span></div>
+          <p>A gallery of <b>38,000+ figures and tables</b> cropped from 2,800+ papers at the top computer science venues, 2021 to 2026. Each one is labelled by type and linked to its paper, venue and award.</p>
+          <p>Filter by figure type, venue, award tier or drawing style, search captions and arXiv ids, and share any view by URL. Made for picking a reference figure before drawing one, or before asking a model to.</p>
+          <div class="tags"><span>Python</span><span>PyMuPDF</span><span>Vision LLM</span><span>Cloudflare Pages</span></div>
+          <a class="plink" href="https://paperfigure.net/" target="_blank" rel="noopener noreferrer">paperfigure.net →</a>
+          <a class="plink" href="https://github.com/fengxijia/PaperFigureLib" target="_blank" rel="noopener noreferrer">github.com/fengxijia/PaperFigureLib →</a>
+        </div>
 
         <div class="proj">
           <div class="ph"><span class="pn">CozyPet</span><span class="pd">since 2026·04</span></div>
@@ -353,19 +387,19 @@
         </div>
 
         <div class="proj">
-          <div class="ph"><span class="pn">Doro Community</span><span class="pd">since 2025·10</span></div>
-          <p>A peer support community for graduate researchers. Founder, rule maker and content creator. Researchers who came through depression or anxiety share what worked with people going through it now.</p>
-          <p>The site carries CBT self-help material, explainer videos and posts on what actually comes up: failed experiments, advisor relationships, paper pressure, isolation, procrastination.</p>
-          <p style="font-size:12.5px;">What people report there is also what the peer-support simulation was built to model.</p>
-          <div class="tags"><span>Community</span><span>CBT</span><span>Peer support</span></div>
-        </div>
-
-        <div class="proj">
           <div class="ph"><span class="pn">LoveAudit</span><span class="pd">since 2026·01</span></div>
           <p>An LLM walks you through your own relationship and tells you what it sees. Anonymous, no account, nothing stored server-side. About <b>2k visits</b> so far.</p>
           <p>The framework scores value alignment, communication, conflict handling, boundaries and long-term commitment.</p>
           <div class="tags"><span>Next.js</span><span>FastAPI</span><span>LLM</span></div>
           <a class="plink" href="https://github.com/fengxijia/loveAudit" target="_blank" rel="noopener noreferrer">github.com/fengxijia/loveAudit →</a>
+        </div>
+
+        <div class="proj">
+          <div class="ph"><span class="pn">Doro Community</span><span class="pd">since 2025·10</span></div>
+          <p>A peer support community for graduate researchers. Founder, rule maker and content creator. Researchers who came through depression or anxiety share what worked with people going through it now.</p>
+          <p>The site carries CBT self-help material, explainer videos and posts on what actually comes up: failed experiments, advisor relationships, paper pressure, isolation, procrastination.</p>
+          <p style="font-size:12.5px;">What people report there is also what the peer-support simulation was built to model.</p>
+          <div class="tags"><span>Community</span><span>CBT</span><span>Peer support</span></div>
         </div>
 
       </div>
@@ -454,53 +488,52 @@
   key.position.set(-300, 400, 900); scene.add(key);
 
   // ---------------------------------------------------------------- the model
-  // Same linear-threshold cascade as the research: a node tips once enough of
-  // its ties have. Seeded share eta, one run per slider position.
-  var N = 46, THETA = 0.34, ROUNDS = 30;
+  // One person in the middle, a room of people around her. Meeting someone
+  // adds a tie to her and up to two ties to friends already met. Every person
+  // has a baseline mood; support from neighbours lifts it, with diminishing
+  // returns, and a lifted friend gives more back. Run to a fixed point.
+  var N = 46, ME = 0, BETA = 0.18, ROUNDS = 40;
   function rng(seed){ return function(){ seed = (seed*1664525+1013904223) % 4294967296; return seed/4294967296; }; }
-  var rnd = rng(20260907), pos = [], i, j, k;
-  for (i = 0; i < N; i++) {                       // points on a squashed ball
-    var u = rnd()*2-1, th = rnd()*Math.PI*2, r = Math.pow(rnd(), 0.42);
-    var s = Math.sqrt(1-u*u);
-    pos.push(new THREE.Vector3(r*s*Math.cos(th)*1.28, r*u*0.86, r*s*Math.sin(th)*1.28));
+  var rnd = rng(20260907), pos = [new THREE.Vector3(0,0,0)], base = [0.12], i, j, k;
+  for (i = 1; i < N; i++) {                       // points on a squashed ball, none too close to the middle
+    var u = rnd()*2-1, th = rnd()*Math.PI*2, r = 0.34 + 0.66*Math.pow(rnd(), 0.55);
+    var sq = Math.sqrt(1-u*u);
+    pos.push(new THREE.Vector3(r*sq*Math.cos(th)*1.28, r*u*0.86, r*sq*Math.sin(th)*1.28));
+    base.push(0.32 + 0.36*rnd());
   }
-  var adj = []; for (i = 0; i < N; i++) adj.push([]);
-  for (i = 0; i < N; i++) {
-    var d = [];
-    for (j = 0; j < N; j++) if (j !== i) d.push([pos[i].distanceToSquared(pos[j]), j]);
-    d.sort(function(a,b){ return a[0]-b[0]; });
-    for (k = 0; k < 3; k++) {
-      var m = d[k][1];
-      if (adj[i].indexOf(m) < 0) adj[i].push(m);
-      if (adj[m].indexOf(i) < 0) adj[m].push(i);
-    }
-  }
-  var edges = [];
-  for (i = 0; i < N; i++) for (j = 0; j < adj[i].length; j++) if (adj[i][j] > i) edges.push([i, adj[i][j]]);
-  var order = []; for (i = 0; i < N; i++) order.push(i);
+  var order = []; for (i = 1; i < N; i++) order.push(i);   // the order people are met
   var sr = rng(99137);
-  for (i = N-1; i > 0; i--){ var q = Math.floor(sr()*(i+1)), t = order[i]; order[i] = order[q]; order[q] = t; }
+  for (i = order.length-1; i > 0; i--){ var q = Math.floor(sr()*(i+1)), t = order[i]; order[i] = order[q]; order[q] = t; }
 
-  function cascade(eta) {
-    var s = new Array(N), seeds = Math.round(eta*N);
-    for (i = 0; i < N; i++) s[i] = false;
-    for (i = 0; i < seeds; i++) s[order[i]] = true;
-    for (var r = 0; r < ROUNDS; r++) {
-      var next = s.slice(), changed = false;
-      for (i = 0; i < N; i++) {
-        if (s[i]) continue;
-        var hit = 0;
-        for (j = 0; j < adj[i].length; j++) if (s[adj[i][j]]) hit++;
-        if (adj[i].length && hit/adj[i].length >= THETA) { next[i] = true; changed = true; }
-      }
-      s = next; if (!changed) break;
+  function simulate(count) {
+    var known = new Array(N), adj = [], m = base.slice(), edges = [];
+    for (i = 0; i < N; i++) { known[i] = false; adj.push([]); }
+    known[ME] = true;
+    var met = order.slice(0, count);
+    for (i = 0; i < met.length; i++) known[met[i]] = true;
+    function tie(a, b) {
+      if (adj[a].indexOf(b) >= 0) return;
+      adj[a].push(b); adj[b].push(a); edges.push([a, b]);
     }
-    var down = 0; for (i = 0; i < N; i++) if (s[i]) down++;
-    return { states: s, capacity: 1 - down/N };
+    for (i = 0; i < met.length; i++) {
+      var f = met[i]; tie(ME, f);
+      var d = [];                                    // friends support the two friends nearest to them
+      for (j = 0; j < met.length; j++) if (met[j] !== f) d.push([pos[f].distanceToSquared(pos[met[j]]), met[j]]);
+      d.sort(function(a,b){ return a[0]-b[0]; });
+      for (k = 0; k < 2 && k < d.length; k++) tie(f, d[k][1]);
+    }
+    for (var rd = 0; rd < ROUNDS; rd++) {
+      var next = m.slice();
+      for (i = 0; i < N; i++) {
+        if (!known[i]) continue;
+        var got = 0;
+        for (j = 0; j < adj[i].length; j++) got += m[adj[i][j]];
+        next[i] = base[i] + (1 - base[i]) * (1 - Math.exp(-BETA * got));
+      }
+      m = next;
+    }
+    return { known: known, mood: m, edges: edges };
   }
-  var etaC = null;
-  for (var e = 0; e <= 45 && etaC === null; e++) if (cascade(e/100).capacity < 0.5) etaC = e/100;
-  if (etaC === null) etaC = 0.45;
 
   // ---------------------------------------------------------------- constellation
   var net = new THREE.Group(); scene.add(net);
@@ -513,46 +546,55 @@
     mesh.position.copy(pos[i]); mesh.scale.setScalar(0.028);
     net.add(mesh); dots.push(mesh); dotMats.push(mm);
   }
+  var MAXE = N * 3;
   var lineGeo = new THREE.BufferGeometry();
-  var lp = new Float32Array(edges.length * 6), lc = new Float32Array(edges.length * 6);
-  for (i = 0; i < edges.length; i++) {
-    var a = pos[edges[i][0]], b = pos[edges[i][1]];
-    lp.set([a.x,a.y,a.z,b.x,b.y,b.z], i*6);
-  }
+  var lp = new Float32Array(MAXE * 6), lc = new Float32Array(MAXE * 6);
   lineGeo.setAttribute("position", new THREE.BufferAttribute(lp, 3));
   lineGeo.setAttribute("color", new THREE.BufferAttribute(lc, 3));
   var lines = new THREE.LineSegments(lineGeo,
     new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85 }));
   net.add(lines);
 
-  var cs = new THREE.Color(), cd = new THREE.Color();
-  function paint(states) {
+  var LOW = new THREE.Color(0x4A5A8C), HIGH = new THREE.Color(0xFFC96B), STRANGER = new THREE.Color(0x2A3140);
+  var TIE_LOW = new THREE.Color(0x2C3A57), TIE_HIGH = new THREE.Color(0x7A6236);
+  var cc = new THREE.Color();
+  function paint(res) {
     for (var n = 0; n < N; n++) {
-      var down = states[n];
-      dotMats[n].color.setHex(down ? COL.amber : COL.stable);
-      dotMats[n].emissive.setHex(down ? COL.amber : COL.stable);
-      dots[n].scale.setScalar(down ? 0.036 : 0.026);
+      var mat = dotMats[n];
+      if (!res.known[n]) {
+        mat.color.copy(STRANGER); mat.emissive.copy(STRANGER); mat.emissiveIntensity = 0.25;
+        dots[n].scale.setScalar(0.013);
+        continue;
+      }
+      var mood = res.mood[n];
+      cc.copy(LOW).lerp(HIGH, mood);
+      mat.color.copy(cc); mat.emissive.copy(cc); mat.emissiveIntensity = 0.35 + 0.65*mood;
+      dots[n].scale.setScalar(n === ME ? 0.052 : 0.022 + 0.014*mood);
     }
-    for (var q = 0; q < edges.length; q++) {
-      var both = states[edges[q][0]] && states[edges[q][1]];
-      (both ? cd.setHex(COL.tieDown) : cs.setHex(COL.tie));
-      var c = both ? cd : cs;
-      lc.set([c.r,c.g,c.b,c.r,c.g,c.b], q*6);
+    for (var q = 0; q < res.edges.length; q++) {
+      var a = res.edges[q][0], b = res.edges[q][1];
+      lp.set([pos[a].x,pos[a].y,pos[a].z,pos[b].x,pos[b].y,pos[b].z], q*6);
+      cc.copy(TIE_LOW).lerp(TIE_HIGH, (res.mood[a]+res.mood[b])/2);
+      lc.set([cc.r,cc.g,cc.b,cc.r,cc.g,cc.b], q*6);
     }
+    lineGeo.setDrawRange(0, res.edges.length * 2);
+    lineGeo.attributes.position.needsUpdate = true;
     lineGeo.attributes.color.needsUpdate = true;
   }
 
-  var slider = document.getElementById("eta"), verdict = document.getElementById("verdict");
-  function run(eta) {
-    var res = cascade(eta);
-    paint(res.states);
-    var bad = res.capacity < 0.5;
-    verdict.textContent = bad ? "collapsed" : "stable";
-    verdict.className = bad ? "bad" : "";
+  var slider = document.getElementById("friends"), verdict = document.getElementById("verdict"),
+      flabel = document.getElementById("friends-label");
+  function word(mood) { return mood < 0.3 ? "low" : mood < 0.55 ? "getting by" : mood < 0.8 ? "lighter" : "bright"; }
+  function run(count) {
+    var res = simulate(count);
+    paint(res);
+    var me = res.mood[ME];
+    flabel.textContent = count + (count === 1 ? " friend" : " friends");
+    verdict.textContent = word(me);
+    verdict.className = me < 0.3 ? "bad" : "";
   }
-  slider.addEventListener("input", function(){ run(+slider.value/100); });
-  slider.value = Math.max(0, Math.round(etaC*100) - 5);
-  run(+slider.value/100);
+  slider.addEventListener("input", function(){ run(+slider.value); });
+  run(+slider.value);
 
   // ---------------------------------------------------------------- paintings
   var VERT = [
@@ -668,5 +710,16 @@
   document.documentElement.classList.add("gl-on");
   resize();
   requestAnimationFrame(frame);
+})();
+</script>
+<script>
+(function(){
+  var strip=document.getElementById("projects"),prev=document.getElementById("built-prev"),next=document.getElementById("built-next");
+  if(!strip||!prev||!next) return;
+  function step(){ var c=strip.querySelector(".proj"); return c? c.getBoundingClientRect().width+30 : strip.clientWidth; }
+  function sync(){ prev.disabled=strip.scrollLeft<=2; next.disabled=strip.scrollLeft+strip.clientWidth>=strip.scrollWidth-2; }
+  prev.addEventListener("click",function(){ strip.scrollBy({left:-step(),behavior:"smooth"}); });
+  next.addEventListener("click",function(){ strip.scrollBy({left:step(),behavior:"smooth"}); });
+  strip.addEventListener("scroll",sync); window.addEventListener("resize",sync); sync();
 })();
 </script>
