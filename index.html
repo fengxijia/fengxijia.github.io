@@ -268,6 +268,10 @@
   .sound[aria-pressed="true"] .bars i:nth-child(2){animation-delay:.25s;}
   .sound[aria-pressed="true"] .bars i:nth-child(3){animation-delay:.5s;}
   @keyframes eq{from{height:3px}to{height:11px}}
+  .yt{margin-top:16px;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9;}
+  .yt iframe{display:block;width:100%;height:100%;border:0;}
+  .tracks li.now .tt{color:var(--accent);}
+  .tracks li.now .n{color:var(--accent);}
   .sound-float{position:fixed;right:16px;bottom:16px;z-index:6;display:none;background:var(--card);}
   html.playing .sound-float{display:inline-flex;}
   @media (prefers-reduced-motion:reduce){ .sound[aria-pressed="true"] .bars i{animation:none;height:8px;} }
@@ -444,11 +448,12 @@
     <section class="card s5 c-play">
       <div class="built-head">
         <h2>Playlist</h2>
-        <button type="button" class="sound" id="sound" aria-pressed="false" aria-label="Background sound, off">
-          <span class="bars"><i></i><i></i><i></i></span><span class="sl">sound off</span>
+        <button type="button" class="sound" id="sound" aria-pressed="false" aria-label="Play the playlist">
+          <span class="bars"><i></i><i></i><i></i></span><span class="sl">play</span>
         </button>
       </div>
-      <ol class="tracks">
+      <div class="yt" id="yt" hidden><div id="yt-player"></div></div>
+      <ol class="tracks" id="tracks">
         <li><a href="https://www.youtube.com/watch?v=D4ZKlT1EvCA" target="_blank" rel="noopener noreferrer"><span class="n">01</span><span class="tt">21st Century Breakdown</span><span class="ta">Green Day</span></a></li>
         <li><a href="https://www.youtube.com/watch?v=4z7oi-QxE8s" target="_blank" rel="noopener noreferrer"><span class="n">02</span><span class="tt">Jesus of Suburbia</span><span class="ta">Green Day</span></a></li>
         <li><a href="https://www.youtube.com/watch?v=0OjISWlmM9k" target="_blank" rel="noopener noreferrer"><span class="n">03</span><span class="tt">¡Viva la Gloria!</span><span class="ta">Green Day</span></a></li>
@@ -799,49 +804,90 @@
   requestAnimationFrame(frame);
 })();
 </script>
-<button type="button" class="sound sound-float" id="sound-float" aria-pressed="true" aria-label="Background sound, on">
-  <span class="bars"><i></i><i></i><i></i></span><span class="sl">sound on</span>
+<button type="button" class="sound sound-float" id="sound-float" aria-pressed="true" aria-label="Pause the playlist">
+  <span class="bars"><i></i><i></i><i></i></span><span class="sl">playing</span>
 </button>
 <script>
-/* Background sound. Her own tracks live only on the private mirror (assets/audio/,
-   served behind login). The public build ships no audio, so there the toggle is
-   hidden and nothing plays. Browsers only allow audio after a tap, so it starts off. */
+/* Playlist player. First choice: YouTube's embedded player (the official uploads
+   listed in the card), playing the list in order and looping. Where the YouTube
+   API cannot load (artifact preview, blocked network) fall back to her own
+   tracks on the private mirror (assets/audio/, behind login). Otherwise the
+   button stays hidden and the rows remain plain links. */
 (function(){
-  var btn=document.getElementById("sound"), flt=document.getElementById("sound-float");
-  if(!btn||!flt) return;
-  var LIST_SRC="assets/audio/playlist.json", BGM_SRC="assets/audio/bgm.mp3";
-  var bgm=null, list=[], idx=0, on=false;
+  var btn=document.getElementById("sound"), flt=document.getElementById("sound-float"),
+      box=document.getElementById("yt"), rows=[].slice.call(document.querySelectorAll("#tracks li"));
+  if(!btn||!flt||!box||!rows.length) return;
+  var ids=rows.map(function(li){ var m=li.querySelector("a").href.match(/[?&]v=([\w-]{11})/); return m?m[1]:null; });
+  var mode=null, on=false, idx=0, yt=null, ready=false, bgm=null, list=[];
   btn.hidden=true;
-  function probe(url,cb){ var x=new XMLHttpRequest(); x.open("HEAD",url,true); x.timeout=4000; x.onload=function(){ cb(x.status===200); }; x.onerror=x.ontimeout=function(){ cb(false); }; x.send(); }
+
+  function label(){
+    [btn,flt].forEach(function(b){ b.setAttribute("aria-pressed",on?"true":"false"); b.setAttribute("aria-label",on?"Pause the playlist":"Play the playlist"); b.querySelector(".sl").textContent=on?"playing":"play"; });
+    document.documentElement.classList.toggle("playing",on);
+    rows.forEach(function(li,i){ li.classList.toggle("now", mode==="yt" && i===idx); });
+  }
+
+  /* ---- YouTube ---- */
+  function ytLoad(cb){
+    if(window.YT&&window.YT.Player){ cb(true); return; }
+    var done=false, sc=document.createElement("script"); sc.src="https://www.youtube.com/iframe_api";
+    window.onYouTubeIframeAPIReady=function(){ if(!done){ done=true; cb(true); } };
+    sc.onerror=function(){ if(!done){ done=true; cb(false); } };
+    setTimeout(function(){ if(!done){ done=true; cb(!!(window.YT&&window.YT.Player)); } },6000);
+    document.head.appendChild(sc);
+  }
+  function ytPlay(i){
+    idx=i; label();
+    if(ready) yt.loadVideoById(ids[idx]);
+  }
+  function ytNext(){ var n=idx, tries=0; do { n=(n+1)%ids.length; tries++; } while(!ids[n] && tries<ids.length); ytPlay(n); }
+  function ytStart(i){
+    box.hidden=false;
+    if(yt){ on=true; if(i!==undefined) ytPlay(i); else yt.playVideo(); label(); return; }
+    on=true; idx=(i!==undefined)?i:idx; label();
+    yt=new YT.Player("yt-player",{ videoId: ids[idx], playerVars:{ rel:0, playsinline:1, modestbranding:1 },
+      events:{
+        onReady:function(){ ready=true; yt.playVideo(); },
+        onStateChange:function(e){
+          if(e.data===YT.PlayerState.ENDED) ytNext();
+          else if(e.data===YT.PlayerState.PLAYING){ on=true; label(); }
+          else if(e.data===YT.PlayerState.PAUSED){ on=false; label(); }
+        },
+        onError:function(){ ytNext(); }          // embedding disabled or removed: skip it
+      }});
+  }
+  function ytStop(){ if(yt&&ready) yt.pauseVideo(); on=false; label(); }
+
+  /* ---- her own files (private mirror only) ---- */
   function loadList(cb){
-    var x=new XMLHttpRequest(); x.open("GET",LIST_SRC,true); x.timeout=4000;
+    var x=new XMLHttpRequest(); x.open("GET","assets/audio/playlist.json",true); x.timeout=4000;
     x.onload=function(){ try{ var j=JSON.parse(x.responseText); cb(x.status===200&&j.length?j:[]); }catch(e){ cb([]); } };
-    x.onerror=x.ontimeout=function(){ cb([]); };
-    x.send();
+    x.onerror=x.ontimeout=function(){ cb([]); }; x.send();
   }
-  loadList(function(l){
-    if(l.length){ list=l; btn.hidden=false; return; }
-    probe(BGM_SRC,function(ok){ if(ok){ list=[{file:null}]; btn.hidden=false; } });
-  });
-  function src(i){ return list[i].file ? "assets/audio/"+list[i].file : BGM_SRC; }
-  function set(state){
-    on=state; document.documentElement.classList.toggle("playing",on);
-    [btn,flt].forEach(function(b){ b.setAttribute("aria-pressed",on?"true":"false"); b.setAttribute("aria-label","Background sound, "+(on?"on":"off")); b.querySelector(".sl").textContent=on?"sound on":"sound off"; });
+  function fileStart(){
+    if(!bgm){ bgm=new Audio(); bgm.preload="auto"; bgm.volume=0.55;
+      bgm.addEventListener("ended",function(){ idx=(idx+1)%list.length; bgm.src="assets/audio/"+list[idx].file; bgm.play(); });
+      bgm.src="assets/audio/"+list[idx].file; }
+    var pr=bgm.play(); if(pr&&pr.catch) pr.catch(function(){ on=false; label(); });
+    on=true; label();
   }
-  function start(){
-    if(!bgm){
-      bgm=new Audio(); bgm.preload="auto"; bgm.volume=0.55; bgm.loop=(list.length===1);
-      bgm.addEventListener("ended",function(){ if(list.length>1){ idx=(idx+1)%list.length; bgm.src=src(idx); bgm.play(); } });
-      bgm.addEventListener("error",function(){ set(false); btn.hidden=true; });
-      bgm.src=src(idx);
-    }
-    var pr=bgm.play(); if(pr&&pr.catch) pr.catch(function(){ set(false); });
-    set(true);
-  }
-  function stop(){ if(bgm) bgm.pause(); set(false); }
-  function toggle(){ on?stop():start(); }
+  function fileStop(){ if(bgm) bgm.pause(); on=false; label(); }
+
+  /* ---- wiring ---- */
+  function toggle(){ if(mode==="yt"){ on?ytStop():ytStart(); } else if(mode==="file"){ on?fileStop():fileStart(); } }
   btn.addEventListener("click",toggle); flt.addEventListener("click",toggle);
-  document.addEventListener("visibilitychange",function(){ if(document.hidden&&on) stop(); });
+  rows.forEach(function(li,i){
+    li.querySelector("a").addEventListener("click",function(ev){
+      if(mode==="yt"&&ids[i]){ ev.preventDefault(); ytStart(i); }
+    });
+  });
+  document.addEventListener("visibilitychange",function(){ if(document.hidden&&on&&mode==="file") fileStop(); });
+
+  // decide the mode once the YouTube API has answered
+  ytLoad(function(ok){
+    if(ok){ mode="yt"; btn.hidden=false; return; }
+    loadList(function(l){ if(l.length){ mode="file"; list=l; btn.hidden=false; } });
+  });
 })();
 </script>
 <script>
