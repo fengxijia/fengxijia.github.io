@@ -340,14 +340,13 @@
         </div>
         <div class="thread">
           <h3>The cost of ultra-long responses</h3>
-          <p class="when">BeCool &amp; CoAI, Tsinghua · 2025-2026 · in review</p>
+          <p class="when">BeCool &amp; CoAI, Tsinghua · 2025-2026 · in progress</p>
           <p>Autoregressive decoding makes a long response cost more than its length suggests. This work measures how much, across vLLM and SGLang, models from 7B to 397B, and context windows from 128K to 1M.</p>
           <ul class="pts">
-            <li>Decode time turns <b>super-linear</b> at ultra-long lengths, on vLLM and SGLang alike. A linear estimate fitted on normal outputs underestimates the real cost by <span class="val">10% to 35%</span>.</li>
+            <li>Decode time turns <b>super-linear</b> at ultra-long lengths, on vLLM and SGLang alike. A linear estimate fitted on normal outputs underestimates the real cost.</li>
             <li>A calibrated cost model gives two threshold lengths: where the linear estimate stops holding, and where a request stops paying for the GPU time it occupies. The first is a property of the model and the engine, not of the hardware.</li>
-            <li>In shared serving the normal requests stay largely unaffected. What the long ones consume is the provider's margin: a <span class="val">1%</span> burst of them holds the node for 10,895 seconds while normal traffic clears in 105.</li>
+            <li>In shared serving the normal requests stay largely unaffected. What the long ones consume is the provider's margin: a small burst of them holds the node long after normal traffic has cleared.</li>
           </ul>
-          <p style="margin-top:13px;font-size:13px;">Written up as <b>SnowballCost</b>, submitted to EACL.</p>
         </div>
       </div>
     </section>
@@ -358,11 +357,6 @@
         <p class="ttl">When 🙂 Turns Hostile: Interpreting How Emojis Trigger LLMs' Toxicity<span class="badge oral">AAAI'26 · Oral</span></p>
         <p class="who">with Tsinghua collaborators · <b>Xijia Feng</b>, second author, implementation and large-scale validation</p>
         <p class="g">Emojis act as a heterogeneous semantic channel that slips past safety alignment. Across 7 models and 5 languages.</p>
-      </div>
-      <div class="pub">
-        <p class="ttl">SnowballCost: A Systematic Measurement of the Impact of Ultra-Long Responses on Large Language Model Inference Services<span class="badge rev">EACL · under review</span></p>
-        <p class="who"><b>Xijia Feng</b>, first author</p>
-        <p class="g">A measurement framework for the serving cost of ultra-long responses, and a calibrated cost model that locates where a request stops paying for the GPU time it holds. The model beats a linear fit at ultra-long lengths and transfers across models and devices.</p>
       </div>
     </section>
 
