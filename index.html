@@ -634,7 +634,7 @@
   }
 
   var slider = document.getElementById("friends"), verdict = document.getElementById("verdict");
-  function word(mood) { return mood < 0.3 ? "low" : mood < 0.55 ? "getting by" : mood < 0.8 ? "lighter" : "bright"; }
+  function word(mood) { return mood < 0.3 ? "drained" : mood < 0.55 ? "getting by" : mood < 0.8 ? "lighter" : "bright"; }
   function run(count) {
     var res = simulate(count);
     paint(res);
