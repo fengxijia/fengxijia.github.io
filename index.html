@@ -744,22 +744,27 @@
     var cr = canvas.getBoundingClientRect();
     return { l: cr.left, t: cr.top, w: cr.width || window.innerWidth, h: cr.height || window.innerHeight };
   }
-  function resize() {
+  var lastY = window.scrollY, vel = 0, t0 = performance.now(), lastW = 0, lastH = 0;
+  // fit(): camera + drawing buffer follow the canvas box and the current zoom level.
+  // Cheap, so it runs the moment the box changes (browser zoom fires many resizes).
+  function fit() {
     var cb = box(), w = cb.w, h = cb.h;
+    if (!(w > 1 && h > 1)) return;
     camera.fov = 2*Math.atan((h/2)/PERSPECTIVE)*(180/Math.PI);
     camera.aspect = w/h; camera.updateProjectionMatrix();
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(w, h, false);
-    buildPlanes();
+    lastW = w; lastH = h;
   }
+  function resize() { fit(); buildPlanes(); }
   var rt = null;
   function soon(){ clearTimeout(rt); rt = setTimeout(resize, 150); }
-  window.addEventListener("resize", soon);
+  window.addEventListener("resize", function(){ fit(); soon(); });
 
-  var lastY = window.scrollY, vel = 0, t0 = performance.now(), lastW = 0, lastH = 0;
   function frame(now) {
     var t = (now - t0) / 1000;
     var cb = box(), w = cb.w, h = cb.h;
-    if (Math.abs(w - lastW) > 1 || Math.abs(h - lastH) > 1) { lastW = w; lastH = h; soon(); }
+    if (Math.abs(w - lastW) > 1 || Math.abs(h - lastH) > 1) { fit(); soon(); }
 
     var raw = window.scrollY - lastY; lastY = window.scrollY;
     vel += (raw - vel) * 0.14;
