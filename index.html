@@ -807,15 +807,33 @@
   if(!btn||!flt) return;
   var AC=window.AudioContext||window.webkitAudioContext; if(!AC){ btn.disabled=true; return; }
   var ctx=null, master=null, bus=null, timer=null, on=false, step=0;
-  var BGM_SRC="assets/audio/bgm.mp3", bgm=null, bgmOk=null;   // null = untested, true = plays, false = use the pad
+  /* Her own tracks live only on the private mirror (assets/audio/, served behind
+     login). The public build ships no audio, so there the list is missing and the
+     pad plays instead. */
+  var LIST_SRC="assets/audio/playlist.json", BGM_SRC="assets/audio/bgm.mp3";
+  var bgm=null, bgmOk=null, list=null, idx=0;   // bgmOk: null = untested, true = plays, false = use the pad
+  function loadList(cb){
+    if(list!==null){ cb(list); return; }
+    var x=new XMLHttpRequest(); x.open("GET",LIST_SRC,true); x.timeout=4000;
+    x.onload=function(){ try{ var j=JSON.parse(x.responseText); list=(x.status===200&&j.length)?j:[]; }catch(e){ list=[]; } cb(list); };
+    x.onerror=x.ontimeout=function(){ list=[]; cb(list); };
+    x.send();
+  }
   function bgmTry(cb){
     if(bgmOk!==null){ cb(bgmOk); return; }
-    bgm=new Audio(); bgm.loop=true; bgm.preload="auto"; bgm.volume=0.55;
-    var done=false; function fin(v){ if(done) return; done=true; bgmOk=v; cb(v); }
-    bgm.addEventListener("canplay",function(){ fin(true); },{once:true});
-    bgm.addEventListener("error",function(){ fin(false); },{once:true});
-    setTimeout(function(){ fin(bgm.readyState>=3); },4000);
-    bgm.src=BGM_SRC; bgm.load();
+    loadList(function(l){
+      bgm=new Audio(); bgm.preload="auto"; bgm.volume=0.55;
+      var done=false; function fin(v){ if(done) return; done=true; bgmOk=v; cb(v); }
+      bgm.addEventListener("canplay",function(){ fin(true); },{once:true});
+      bgm.addEventListener("error",function(){ if(!done) fin(false); },{once:true});
+      setTimeout(function(){ fin(bgm.readyState>=3); },4000);
+      if(l.length){
+        bgm.loop=false;
+        bgm.addEventListener("ended",function(){ idx=(idx+1)%l.length; bgm.src="assets/audio/"+l[idx].file; bgm.play(); });
+        bgm.src="assets/audio/"+l[0].file;
+      } else { bgm.loop=true; bgm.src=BGM_SRC; }
+      bgm.load();
+    });
   }
   var CHORDS=[[57,60,64,67],[53,57,60,64],[48,52,55,59],[55,59,62,65]];   // Am7 F Cmaj7 G
   var BAR=4.8;
