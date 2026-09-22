@@ -803,97 +803,42 @@
   <span class="bars"><i></i><i></i><i></i></span><span class="sl">sound on</span>
 </button>
 <script>
-/* Background sound. First choice: her own licensed track at assets/audio/bgm.mp3,
-   looped. If that file is missing or fails to load (artifact preview, blocked
-   network), fall back to a soft generated pad. Browsers only allow audio after
-   a tap, so it starts off. */
+/* Background sound. Her own tracks live only on the private mirror (assets/audio/,
+   served behind login). The public build ships no audio, so there the toggle is
+   hidden and nothing plays. Browsers only allow audio after a tap, so it starts off. */
 (function(){
   var btn=document.getElementById("sound"), flt=document.getElementById("sound-float");
   if(!btn||!flt) return;
-  var AC=window.AudioContext||window.webkitAudioContext; if(!AC){ btn.disabled=true; return; }
-  var ctx=null, master=null, bus=null, timer=null, on=false, step=0;
-  /* Her own tracks live only on the private mirror (assets/audio/, served behind
-     login). The public build ships no audio, so there the list is missing and the
-     pad plays instead. */
   var LIST_SRC="assets/audio/playlist.json", BGM_SRC="assets/audio/bgm.mp3";
-  var bgm=null, bgmOk=null, list=null, idx=0;   // bgmOk: null = untested, true = plays, false = use the pad
+  var bgm=null, list=[], idx=0, on=false;
+  btn.hidden=true;
+  function probe(url,cb){ var x=new XMLHttpRequest(); x.open("HEAD",url,true); x.timeout=4000; x.onload=function(){ cb(x.status===200); }; x.onerror=x.ontimeout=function(){ cb(false); }; x.send(); }
   function loadList(cb){
-    if(list!==null){ cb(list); return; }
     var x=new XMLHttpRequest(); x.open("GET",LIST_SRC,true); x.timeout=4000;
-    x.onload=function(){ try{ var j=JSON.parse(x.responseText); list=(x.status===200&&j.length)?j:[]; }catch(e){ list=[]; } cb(list); };
-    x.onerror=x.ontimeout=function(){ list=[]; cb(list); };
+    x.onload=function(){ try{ var j=JSON.parse(x.responseText); cb(x.status===200&&j.length?j:[]); }catch(e){ cb([]); } };
+    x.onerror=x.ontimeout=function(){ cb([]); };
     x.send();
   }
-  function bgmTry(cb){
-    if(bgmOk!==null){ cb(bgmOk); return; }
-    loadList(function(l){
-      bgm=new Audio(); bgm.preload="auto"; bgm.volume=0.55;
-      var done=false; function fin(v){ if(done) return; done=true; bgmOk=v; cb(v); }
-      bgm.addEventListener("canplay",function(){ fin(true); },{once:true});
-      bgm.addEventListener("error",function(){ if(!done) fin(false); },{once:true});
-      setTimeout(function(){ fin(bgm.readyState>=3); },4000);
-      if(l.length){
-        bgm.loop=false;
-        bgm.addEventListener("ended",function(){ idx=(idx+1)%l.length; bgm.src="assets/audio/"+l[idx].file; bgm.play(); });
-        bgm.src="assets/audio/"+l[0].file;
-      } else { bgm.loop=true; bgm.src=BGM_SRC; }
-      bgm.load();
-    });
-  }
-  var CHORDS=[[57,60,64,67],[53,57,60,64],[48,52,55,59],[55,59,62,65]];   // Am7 F Cmaj7 G
-  var BAR=4.8;
-  function hz(m){ return 440*Math.pow(2,(m-69)/12); }
-  function build(){
-    ctx=new AC(); master=ctx.createGain(); master.gain.value=0; master.connect(ctx.destination);
-    var lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1400; lp.Q.value=0.4;
-    var dl=ctx.createDelay(2); dl.delayTime.value=0.46; var fb=ctx.createGain(); fb.gain.value=0.38;
-    var wet=ctx.createGain(); wet.gain.value=0.35;
-    lp.connect(master); lp.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(master);
-    bus=lp;
-  }
-  function pad(m,t,len){
-    var o=ctx.createOscillator(), g=ctx.createGain(), o2=ctx.createOscillator();
-    o.type="triangle"; o2.type="sine"; o.frequency.value=hz(m); o2.frequency.value=hz(m)*1.003;
-    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.05,t+1.4); g.gain.setValueAtTime(0.05,t+len-1.8); g.gain.linearRampToValueAtTime(0,t+len);
-    o.connect(g); o2.connect(g); g.connect(bus); o.start(t); o2.start(t); o.stop(t+len); o2.stop(t+len);
-  }
-  function pluck(m,t){
-    var o=ctx.createOscillator(), g=ctx.createGain(); o.type="sine"; o.frequency.value=hz(m);
-    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.07,t+0.02); g.gain.exponentialRampToValueAtTime(0.0005,t+1.6);
-    o.connect(g); g.connect(bus); o.start(t); o.stop(t+1.7);
-  }
-  function bar(){
-    var t=ctx.currentTime+0.05, ch=CHORDS[step%CHORDS.length]; step++;
-    for(var i=0;i<ch.length;i++) pad(ch[i],t,BAR+1.5);
-    var order=[0,2,1,3,2,0,3,1];
-    for(var k=0;k<8;k++) if(Math.random()<0.7) pluck(ch[order[k]]+12,t+k*(BAR/8));
-    timer=setTimeout(bar,BAR*1000);
-  }
+  loadList(function(l){
+    if(l.length){ list=l; btn.hidden=false; return; }
+    probe(BGM_SRC,function(ok){ if(ok){ list=[{file:null}]; btn.hidden=false; } });
+  });
+  function src(i){ return list[i].file ? "assets/audio/"+list[i].file : BGM_SRC; }
   function set(state){
     on=state; document.documentElement.classList.toggle("playing",on);
     [btn,flt].forEach(function(b){ b.setAttribute("aria-pressed",on?"true":"false"); b.setAttribute("aria-label","Background sound, "+(on?"on":"off")); b.querySelector(".sl").textContent=on?"sound on":"sound off"; });
   }
-  function startPad(){
-    if(!ctx) build();
-    if(ctx.state==="suspended") ctx.resume();
-    master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(0.9,ctx.currentTime+2);
-    bar();
-  }
   function start(){
+    if(!bgm){
+      bgm=new Audio(); bgm.preload="auto"; bgm.volume=0.55; bgm.loop=(list.length===1);
+      bgm.addEventListener("ended",function(){ if(list.length>1){ idx=(idx+1)%list.length; bgm.src=src(idx); bgm.play(); } });
+      bgm.addEventListener("error",function(){ set(false); btn.hidden=true; });
+      bgm.src=src(idx);
+    }
+    var pr=bgm.play(); if(pr&&pr.catch) pr.catch(function(){ set(false); });
     set(true);
-    bgmTry(function(ok){
-      if(!on) return;
-      if(ok){ var pr=bgm.play(); if(pr&&pr.catch) pr.catch(function(){ startPad(); }); }
-      else startPad();
-    });
   }
-  function stop(){
-    if(bgm&&!bgm.paused) bgm.pause();
-    clearTimeout(timer); timer=null;
-    if(ctx){ master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(0,ctx.currentTime+1.2);
-      setTimeout(function(){ if(!on&&ctx) ctx.suspend(); },1400); }
-    set(false);
-  }
+  function stop(){ if(bgm) bgm.pause(); set(false); }
   function toggle(){ on?stop():start(); }
   btn.addEventListener("click",toggle); flt.addEventListener("click",toggle);
   document.addEventListener("visibilitychange",function(){ if(document.hidden&&on) stop(); });
