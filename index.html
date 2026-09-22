@@ -637,7 +637,7 @@
   function tier(mood) { return mood < 0.3 ? 0 : mood < 0.55 ? 1 : mood < 0.8 ? 2 : 3; }
   var TIER_COLORS = TIERS.map(function(t){ return new THREE.Color(t.hex); });
   var STRANGER = new THREE.Color(0x2A3140);
-  var TIE_LOW = new THREE.Color(0x3B2A66), TIE_HIGH = new THREE.Color(0x8A6E2E);
+  var TIE_LOW = new THREE.Color(0x2C3A57), TIE_HIGH = new THREE.Color(0x7A6236);
   var cc = new THREE.Color();
   function paint(res) {
     for (var n = 0; n < N; n++) {
