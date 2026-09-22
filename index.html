@@ -17,7 +17,7 @@
     --ink:#FFFFFF;
     --muted:#8C919A;
     --faint:#575C65;
-    --accent:#C39BE4;          /* hers — lilac and gooseberries */
+    --accent:#C39BE4;          /* hers. lilac and gooseberries */
     --accent-dim:rgba(195,155,228,.13);
     --live:#3FD07E;            /* only ever means "available" */
     --amber:#E7A54E;           /* only ever means "collapsed" */
@@ -233,6 +233,37 @@
     .links{grid-template-columns:repeat(4,1fr);}
   }
 
+  /* ---------- playlist + sound ---------- */
+  .leftcol{display:flex;flex-direction:column;gap:14px;min-width:0;}
+  .c-play{flex:1;}
+  .tracks{list-style:none;margin:0;padding:0;}
+  .tracks{margin-top:16px;}
+  .tracks li{border-top:1px solid var(--line);}
+  .tracks a{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:9px 0;color:inherit;text-decoration:none;}
+  .tracks a:hover .tt{color:var(--accent);}
+  .tracks li:first-child{border-top:none;}
+  .tracks li:first-child a{padding-top:0;}
+  .tracks .n{font-family:var(--mono);font-size:10.5px;color:var(--faint);font-variant-numeric:tabular-nums;}
+  .tracks .tt{font-size:14px;font-weight:600;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .tracks .ta{font-family:var(--mono);font-size:10.5px;color:var(--muted);text-align:right;white-space:nowrap;}
+  .sound{
+    display:inline-flex;align-items:center;gap:9px;border:1px solid var(--line-2);background:transparent;
+    color:var(--muted);border-radius:999px;padding:7px 13px;cursor:pointer;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    transition:border-color .2s,color .2s;
+  }
+  .sound:hover{border-color:var(--faint);color:var(--ink);}
+  .sound[aria-pressed="true"]{border-color:var(--accent);color:var(--ink);}
+  .sound .bars{display:inline-flex;gap:2px;align-items:flex-end;height:11px;}
+  .sound .bars i{display:block;width:2px;height:3px;border-radius:1px;background:var(--accent);}
+  .sound[aria-pressed="true"] .bars i{animation:eq .8s ease-in-out infinite alternate;}
+  .sound[aria-pressed="true"] .bars i:nth-child(2){animation-delay:.25s;}
+  .sound[aria-pressed="true"] .bars i:nth-child(3){animation-delay:.5s;}
+  @keyframes eq{from{height:3px}to{height:11px}}
+  .sound-float{position:fixed;right:16px;bottom:16px;z-index:6;display:none;background:var(--card);}
+  html.playing .sound-float{display:inline-flex;}
+  @media (prefers-reduced-motion:reduce){ .sound[aria-pressed="true"] .bars i{animation:none;height:8px;} }
+
   /* ---------- phone ---------- */
   @media (max-width:620px){
     body{padding:10px;}
@@ -248,6 +279,8 @@
     .cvrow .i{font-size:10.5px;line-height:1.5;}
     .row{gap:11px;}
     .row time{min-width:58px;font-size:10.5px;}
+    .tracks .tt{white-space:normal;}
+    .tracks .ta{white-space:normal;max-width:38%;}
     footer{justify-content:flex-start;gap:8px 18px;padding:20px 6px 8px;}
   }
 </style>
@@ -395,15 +428,36 @@
       </div>
     </section>
 
-    <section class="card s5">
+    <div class="s5 leftcol">
+    <section class="card">
       <h2>Off duty</h2>
       <ul class="pts">
         <li><b>Video games.</b> The Witcher 3, team Yennefer. Hogwarts Legacy, Kingdom Come: Deliverance II, The Blood of Dawnwalker, Cyberpunk 2077.</li>
         <li><b>Harry Potter.</b> Grew up alongside the books. They were there through the happiest years and the hardest ones.</li>
-        <li><b>Rock, loud.</b> Green Day, Sum 41, Mayday 五月天, Wowkie Da 大张伟. Preferably with the guitars doing the emotional labour. It is what a long night of failed simulation runs sounds like from the inside.</li>
+        <li><b>Music (Rock).</b> Green Day, Sum 41, Mayday 五月天, Wowkie Da 大张伟, Yu Takahashi 高橋優, Muse. Preferably with the guitars doing the emotional labour. It is what a long night of failed simulation runs sounds like from the inside.</li>
         <li><b>Psychology.</b> The interest that stopped being a hobby. How someone with an automation degree ends up modelling depression treatment.</li>
       </ul>
     </section>
+    <section class="card c-play">
+      <div class="built-head">
+        <h2>Playlist</h2>
+        <button type="button" class="sound" id="sound" aria-pressed="false" aria-label="Background sound, off">
+          <span class="bars"><i></i><i></i><i></i></span><span class="sl">sound off</span>
+        </button>
+      </div>
+      <ol class="tracks">
+        <li><a href="https://www.youtube.com/results?search_query=Basket+Case+Green+Day" target="_blank" rel="noopener noreferrer"><span class="n">01</span><span class="tt">Basket Case</span><span class="ta">Green Day</span></a></li>
+        <li><a href="https://www.youtube.com/results?search_query=Wake+Me+Up+When+September+Ends+Green+Day" target="_blank" rel="noopener noreferrer"><span class="n">02</span><span class="tt">Wake Me Up When September Ends</span><span class="ta">Green Day</span></a></li>
+        <li><a href="https://www.youtube.com/results?search_query=In+Too+Deep+Sum+41" target="_blank" rel="noopener noreferrer"><span class="n">03</span><span class="tt">In Too Deep</span><span class="ta">Sum 41</span></a></li>
+        <li><a href="https://www.youtube.com/results?search_query=%E5%80%94%E5%BC%B7+Mayday+%E4%BA%94%E6%9C%88%E5%A4%A9" target="_blank" rel="noopener noreferrer"><span class="n">04</span><span class="tt">倔強</span><span class="ta">Mayday 五月天</span></a></li>
+        <li><a href="https://www.youtube.com/results?search_query=%E7%AA%81%E7%84%B6%E5%A5%BD%E6%83%B3%E4%BD%A0+Mayday+%E4%BA%94%E6%9C%88%E5%A4%A9" target="_blank" rel="noopener noreferrer"><span class="n">05</span><span class="tt">突然好想你</span><span class="ta">Mayday 五月天</span></a></li>
+        <li><a href="https://www.youtube.com/results?search_query=%E9%98%B3%E5%85%89%E5%BD%A9%E8%99%B9%E5%B0%8F%E7%99%BD%E9%A9%AC+Wowkie+Da+%E5%A4%A7%E5%BC%A0%E4%BC%9F" target="_blank" rel="noopener noreferrer"><span class="n">06</span><span class="tt">阳光彩虹小白马</span><span class="ta">Wowkie Da 大张伟</span></a></li>
+        <li><a href="https://www.youtube.com/results?search_query=%E6%98%8E%E6%97%A5%E3%81%AF%E3%81%8D%E3%81%A3%E3%81%A8%E3%81%84%E3%81%84%E6%97%A5%E3%81%AB%E3%81%AA%E3%82%8B+Yu+Takahashi+%E9%AB%98%E6%A9%8B%E5%84%AA" target="_blank" rel="noopener noreferrer"><span class="n">07</span><span class="tt">明日はきっといい日になる</span><span class="ta">Yu Takahashi 高橋優</span></a></li>
+        <li><a href="https://www.youtube.com/results?search_query=Starlight+Muse" target="_blank" rel="noopener noreferrer"><span class="n">08</span><span class="tt">Starlight</span><span class="ta">Muse</span></a></li>
+        <li><a href="https://www.youtube.com/results?search_query=Hysteria+Muse" target="_blank" rel="noopener noreferrer"><span class="n">09</span><span class="tt">Hysteria</span><span class="ta">Muse</span></a></li>
+      </ol>
+    </section>
+    </div>
 
     <section class="card s7">
       <h2>CV</h2>
@@ -698,6 +752,67 @@
   document.documentElement.classList.add("gl-on");
   resize();
   requestAnimationFrame(frame);
+})();
+</script>
+<button type="button" class="sound sound-float" id="sound-float" aria-pressed="true" aria-label="Background sound, on">
+  <span class="bars"><i></i><i></i><i></i></span><span class="sl">sound on</span>
+</button>
+<script>
+/* Background sound: a soft generated pad, nothing downloaded and nothing
+   copyrighted. Browsers only allow audio after a tap, so it starts off. */
+(function(){
+  var btn=document.getElementById("sound"), flt=document.getElementById("sound-float");
+  if(!btn||!flt) return;
+  var AC=window.AudioContext||window.webkitAudioContext; if(!AC){ btn.disabled=true; return; }
+  var ctx=null, master=null, bus=null, timer=null, on=false, step=0;
+  var CHORDS=[[57,60,64,67],[53,57,60,64],[48,52,55,59],[55,59,62,65]];   // Am7 F Cmaj7 G
+  var BAR=4.8;
+  function hz(m){ return 440*Math.pow(2,(m-69)/12); }
+  function build(){
+    ctx=new AC(); master=ctx.createGain(); master.gain.value=0; master.connect(ctx.destination);
+    var lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1400; lp.Q.value=0.4;
+    var dl=ctx.createDelay(2); dl.delayTime.value=0.46; var fb=ctx.createGain(); fb.gain.value=0.38;
+    var wet=ctx.createGain(); wet.gain.value=0.35;
+    lp.connect(master); lp.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(master);
+    bus=lp;
+  }
+  function pad(m,t,len){
+    var o=ctx.createOscillator(), g=ctx.createGain(), o2=ctx.createOscillator();
+    o.type="triangle"; o2.type="sine"; o.frequency.value=hz(m); o2.frequency.value=hz(m)*1.003;
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.05,t+1.4); g.gain.setValueAtTime(0.05,t+len-1.8); g.gain.linearRampToValueAtTime(0,t+len);
+    o.connect(g); o2.connect(g); g.connect(bus); o.start(t); o2.start(t); o.stop(t+len); o2.stop(t+len);
+  }
+  function pluck(m,t){
+    var o=ctx.createOscillator(), g=ctx.createGain(); o.type="sine"; o.frequency.value=hz(m);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.07,t+0.02); g.gain.exponentialRampToValueAtTime(0.0005,t+1.6);
+    o.connect(g); g.connect(bus); o.start(t); o.stop(t+1.7);
+  }
+  function bar(){
+    var t=ctx.currentTime+0.05, ch=CHORDS[step%CHORDS.length]; step++;
+    for(var i=0;i<ch.length;i++) pad(ch[i],t,BAR+1.5);
+    var order=[0,2,1,3,2,0,3,1];
+    for(var k=0;k<8;k++) if(Math.random()<0.7) pluck(ch[order[k]]+12,t+k*(BAR/8));
+    timer=setTimeout(bar,BAR*1000);
+  }
+  function set(state){
+    on=state; document.documentElement.classList.toggle("playing",on);
+    [btn,flt].forEach(function(b){ b.setAttribute("aria-pressed",on?"true":"false"); b.setAttribute("aria-label","Background sound, "+(on?"on":"off")); b.querySelector(".sl").textContent=on?"sound on":"sound off"; });
+  }
+  function start(){
+    if(!ctx) build();
+    if(ctx.state==="suspended") ctx.resume();
+    master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(0.9,ctx.currentTime+2);
+    bar(); set(true);
+  }
+  function stop(){
+    clearTimeout(timer); timer=null;
+    master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(0,ctx.currentTime+1.2);
+    setTimeout(function(){ if(!on&&ctx) ctx.suspend(); },1400);
+    set(false);
+  }
+  function toggle(){ on?stop():start(); }
+  btn.addEventListener("click",toggle); flt.addEventListener("click",toggle);
+  document.addEventListener("visibilitychange",function(){ if(document.hidden&&on) stop(); });
 })();
 </script>
 <script>
