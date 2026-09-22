@@ -1,0 +1,683 @@
+<title>Xijia Feng</title>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<style>
+  /* ============================================================
+     Bento. Pure black ground, cards floating on it, one live 3D
+     object living inside a single card rather than behind the page.
+     ============================================================ */
+  :root{
+    --bg:#000000;
+    --card:#0D0E10;
+    --card-2:#131417;
+    --line:rgba(255,255,255,.075);
+    --line-2:rgba(255,255,255,.13);
+    --ink:#FFFFFF;
+    --muted:#8C919A;
+    --faint:#575C65;
+    --accent:#C39BE4;          /* hers — lilac and gooseberries */
+    --accent-dim:rgba(195,155,228,.13);
+    --live:#3FD07E;            /* only ever means "available" */
+    --amber:#E7A54E;           /* only ever means "collapsed" */
+    --stable:#7FA0F2;
+    --r:22px;
+    --sans:"Archivo",-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB",
+           "Noto Sans CJK SC","Microsoft YaHei","Segoe UI",sans-serif;
+    --mono:"JetBrains Mono","SF Mono",Menlo,"PingFang SC","Noto Sans CJK SC",monospace;
+  }
+  *{box-sizing:border-box;}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:15px;line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    padding:14px;
+  }
+  a{color:inherit;text-decoration:none;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px;}
+
+  /* the one fixed WebGL surface; every 3D thing on the page lives here */
+  /* Above the cards, not behind them: card backgrounds are opaque, so anything
+     drawn underneath is simply never seen. pointer-events:none keeps the
+     slider and links clickable through it. */
+  #gl{position:fixed;inset:0;z-index:3;pointer-events:none;width:100%;height:100%;}
+  .shell{position:relative;z-index:1;max-width:1420px;margin:0 auto;}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    padding:26px;position:relative;overflow:hidden;
+  }
+  .top{display:grid;grid-template-columns:minmax(0,4.1fr) minmax(0,5fr) minmax(0,3.1fr);gap:14px;}
+  .rightcol{display:flex;flex-direction:column;gap:14px;min-width:0;}
+  .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;margin-top:14px;}
+  .s4{grid-column:span 4;} .s5{grid-column:span 5;} .s6{grid-column:span 6;}
+  .s7{grid-column:span 7;} .s8{grid-column:span 8;} .s12{grid-column:span 12;}
+
+  /* ---------- intro ---------- */
+  .c-intro{padding:0;display:flex;flex-direction:column;}
+  .portrait{position:relative;line-height:0;}
+  .portrait img{width:100%;height:auto;display:block;}
+  /* fade the bottom edge into the card so it reads as part of it, not pasted on */
+  .portrait::after{
+    content:"";position:absolute;inset:auto 0 -1px 0;height:38%;
+    background:linear-gradient(to bottom,rgba(13,14,16,0),var(--card));
+    pointer-events:none;
+  }
+  .portrait .pill{position:absolute;left:20px;bottom:16px;backdrop-filter:blur(10px);
+    background:rgba(0,0,0,.62);border-color:rgba(63,208,126,.65);color:#5FE39A;
+    box-shadow:0 2px 14px rgba(0,0,0,.4);}
+  .intro-body{padding:4px 26px 26px;}
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;
+    border:1px solid rgba(63,208,126,.4);color:var(--live);
+    font-family:var(--mono);font-size:11px;letter-spacing:.02em;
+    padding:6px 13px;border-radius:999px;
+  }
+  .pill i{width:6px;height:6px;border-radius:50%;background:var(--live);display:block;}
+  .handle{font-family:var(--mono);font-size:13px;color:var(--faint);margin:22px 0 12px;}
+  h1{
+    font-size:clamp(40px,4.4vw,62px);font-weight:800;line-height:.94;
+    letter-spacing:-.035em;margin:0;
+  }
+  h1 .cn{display:block;font-size:.30em;font-weight:500;letter-spacing:.22em;color:var(--muted);margin-top:16px;}
+  .role{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em;color:var(--faint);margin:22px 0 0;}
+  .blurb{color:var(--muted);font-size:15px;line-height:1.6;margin:12px 0 0;max-width:34ch;}
+  .blurb b{color:var(--ink);font-weight:600;}
+  .tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:24px;}
+  .tags span{
+    font-family:var(--mono);font-size:11.5px;color:var(--muted);
+    border:1px solid var(--line-2);border-radius:999px;padding:5px 12px;
+  }
+
+  /* ---------- the 3D card ---------- */
+  .c-stage{display:flex;flex-direction:column;min-height:430px;padding:0;}
+  .stage-slot{flex:1;min-height:250px;}
+  .stage-foot{padding:0 26px 24px;text-align:center;}
+  .stage-foot h3{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 0 5px;}
+  .stage-foot p{color:var(--muted);font-size:13.5px;margin:0 0 16px;}
+  .ctl{display:flex;align-items:center;gap:12px;max-width:330px;margin:0 auto;}
+  .ctl label{font-family:var(--mono);font-size:11px;color:var(--faint);white-space:nowrap;}
+  .ctl output{
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--stable);min-width:74px;text-align:right;
+  }
+  .ctl output.bad{color:var(--amber);}
+  input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:20px;background:transparent;margin:0;cursor:grab;}
+  input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--line-2);border-radius:2px;}
+  input[type=range]::-moz-range-track{height:2px;background:var(--line-2);border-radius:2px;}
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:12px;height:12px;border-radius:50%;
+    background:var(--ink);margin-top:-5px;
+  }
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:none;}
+
+  /* ---------- links ---------- */
+  .c-links{padding:22px;}
+  .links{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .links a{
+    aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--line);border-radius:16px;background:var(--card-2);
+    color:var(--muted);transition:color .18s,border-color .18s,background .18s;
+  }
+  .links a:hover{color:var(--ink);border-color:var(--line-2);background:#181A1E;}
+  .links svg{width:19px;height:19px;fill:currentColor;}
+
+  /* ---------- lists ---------- */
+  .c-latest{flex:1;padding:22px;}
+  .kick{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--faint);margin:0 0 16px;
+  }
+  .row{display:flex;gap:13px;padding:11px 0;border-top:1px solid var(--line);align-items:flex-start;}
+  .row:first-of-type{border-top:none;padding-top:0;}
+  .row time{font-family:var(--mono);font-size:11px;color:var(--faint);white-space:nowrap;padding-top:2px;min-width:52px;}
+  .row .t{font-size:14px;font-weight:600;line-height:1.35;letter-spacing:-.01em;}
+  .row .d{font-size:12.5px;color:var(--muted);line-height:1.45;margin-top:2px;}
+  .row .d b{color:var(--ink);font-weight:600;}
+
+  /* ---------- generic card content ---------- */
+  h2{font-size:22px;font-weight:700;letter-spacing:-.025em;margin:0 0 18px;}
+  .card p{color:var(--muted);font-size:14.5px;line-height:1.6;margin:0 0 12px;}
+  .card p b{color:var(--ink);font-weight:600;}
+  ul.pts{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:9px;}
+  ul.pts li{position:relative;padding-left:17px;color:var(--muted);font-size:13.5px;line-height:1.5;}
+  ul.pts li::before{content:"";position:absolute;left:0;top:.66em;width:8px;height:1px;background:var(--accent);}
+  ul.pts li b{color:var(--ink);font-weight:600;}
+  .val{font-family:var(--mono);color:var(--amber);font-weight:700;font-size:.95em;}
+
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:26px;}
+  @media (max-width:900px){ .split{grid-template-columns:1fr;gap:22px;} }
+  .thread h3{font-size:16px;font-weight:700;letter-spacing:-.015em;margin:0 0 3px;}
+  .thread .when{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:0 0 12px;}
+
+  /* ---------- papers ---------- */
+  .pub{padding:15px 0;border-top:1px solid var(--line);}
+  .pub:first-of-type{border-top:none;padding-top:0;}
+  .pub .ttl{font-size:15.5px;font-weight:700;line-height:1.35;letter-spacing:-.015em;margin:0 0 5px;}
+  .pub .who{font-family:var(--mono);font-size:11px;color:var(--faint);margin:0 0 7px;}
+  .pub .who b{color:var(--muted);font-weight:700;}
+  .pub .g{font-size:13.5px;color:var(--muted);line-height:1.5;margin:0;}
+  .badge{
+    display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:999px;
+    margin-left:8px;vertical-align:2px;
+  }
+  .badge.oral{background:var(--accent-dim);color:var(--accent);}
+  .badge.rev{border:1px solid var(--line-2);color:var(--faint);}
+
+  /* ---------- paintings ---------- */
+  /* Column widths in the ratio of the two pictures, so both land on the same
+     height and the short one stops leaving a hole under itself. */
+  .art{display:grid;grid-template-columns:1.889fr 0.616fr;gap:14px;align-items:start;margin-top:18px;}
+  @media (max-width:760px){ .art{grid-template-columns:1fr;} }
+  figure.gl{margin:0;}
+  figure.gl img{display:block;width:100%;height:auto;border-radius:14px;}
+  /* Only hide an image once its plane is actually on the scene. If a build
+     fails for any reason, that image stays visible instead of vanishing. */
+  figure.gl.gl-live img{opacity:0;}
+  figure.gl figcaption{
+    margin:11px 2px 0;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--faint);
+    display:flex;gap:9px;align-items:baseline;
+  }
+  figure.gl figcaption b{color:var(--accent);font-weight:700;letter-spacing:.11em;text-transform:uppercase;white-space:nowrap;}
+
+  /* ---------- projects ---------- */
+  .projects{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px;}
+  @media (max-width:1040px){ .projects{grid-template-columns:1fr;gap:26px;} }
+  .proj{display:flex;flex-direction:column;gap:9px;}
+  .ph{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .pn{font-size:16.5px;font-weight:700;letter-spacing:-.015em;}
+  .pd{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--faint);}
+  .proj p{margin:0;font-size:13.5px;line-height:1.58;color:var(--muted);}
+  .proj p b{color:var(--ink);font-weight:600;}
+  .plink{
+    font-family:var(--mono);font-size:11.5px;color:var(--accent);
+    margin-top:auto;padding-top:4px;display:block;
+  }
+  .plink:hover{text-decoration:underline;}
+
+  /* ---------- cv ---------- */
+  .cvrow{display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid var(--line);}
+  .cvrow:first-of-type{border-top:none;padding-top:0;}
+  .cvrow .y{font-family:var(--mono);font-size:11px;color:var(--faint);padding-top:2px;font-variant-numeric:tabular-nums;}
+  .cvrow .d{font-size:14.5px;font-weight:600;line-height:1.35;}
+  .cvrow .i{font-family:var(--mono);font-size:11px;color:var(--muted);display:block;margin-top:3px;}
+  .cvsub{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:24px 0 12px;}
+  .cvsub:first-of-type{margin-top:0;}
+
+  footer{
+    display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;
+    font-family:var(--mono);font-size:11px;color:var(--faint);
+    padding:24px 8px 10px;
+  }
+  footer a:hover{color:var(--accent);}
+
+  @media (max-width:1040px){
+    .top{grid-template-columns:1fr;}
+    .s4,.s5,.s6,.s7,.s8{grid-column:span 12;}
+  }
+  @media (max-width:620px){
+    body{padding:9px;}
+    .card{padding:20px;border-radius:18px;}
+    .links{grid-template-columns:repeat(4,1fr);}
+  }
+</style>
+
+<canvas id="gl" aria-hidden="true"></canvas>
+
+<div class="shell">
+
+  <div class="top">
+    <!-- ---------------- intro ---------------- -->
+    <section class="card c-intro">
+      <div class="portrait">
+        <img alt="Xijia Feng in front of the Hall of Prayer for Good Harvests, Temple of Heaven, Beijing." src="assets/img/portrait.jpg">
+        <span class="pill"><i></i>Open to 2027 positions</span>
+      </div>
+      <div class="intro-body">
+      <p class="handle">@fengxijia</p>
+      <h1>Hi there.<span class="cn">冯茜嘉</span></h1>
+      <p class="role">Ph.D. candidate, National University of Singapore</p>
+      <p class="blurb">Being happy is the point of being alive. Work worth doing starts from people: what they get to <b>experience</b>, and whether it leaves them happier.</p>
+      <div class="tags">
+        <span>LLM systems</span><span>Drawing</span><span>Rock</span><span>Psychology</span>
+      </div>
+      </div>
+    </section>
+
+    <!-- ---------------- the live 3D card ---------------- -->
+    <section class="card c-stage">
+      <div class="stage-slot" id="stage" data-scene="net"></div>
+      <div class="stage-foot">
+        <h3>A support network, running</h3>
+        <p>η is the share of members who start unrecovered.</p>
+        <div class="ctl">
+          <label for="eta">η</label>
+          <input type="range" id="eta" min="0" max="45" value="8" step="1" aria-describedby="verdict">
+          <output id="verdict">stable</output>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------- right column ---------------- -->
+    <div class="rightcol">
+      <section class="card c-links">
+        <div class="links">
+          <a href="mailto:xijia.feng@u.nus.edu" aria-label="Email" title="xijia.feng@u.nus.edu">
+            <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 4.2-8 4.8-8-4.8V6l8 4.8L20 6Z"/></svg>
+          </a>
+          <a href="https://github.com/fengxijia" target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="github.com/fengxijia">
+            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+          </a>
+          <a href="https://space.bilibili.com/99095413" target="_blank" rel="noopener noreferrer" aria-label="Bilibili, drawings" title="画作发在 B 站">
+            <svg viewBox="0 0 24 24"><path d="M7.6 2.3a1.2 1.2 0 0 1 1.7 0l2.1 2.1h1.2l2.1-2.1a1.2 1.2 0 1 1 1.7 1.7l-.4.4H18a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h2l-.4-.4a1.2 1.2 0 0 1 0-1.7ZM6 8.4a.6.6 0 0 0-.6.6v7a.6.6 0 0 0 .6.6h12a.6.6 0 0 0 .6-.6V9a.6.6 0 0 0-.6-.6H6Zm2.4 2.2a1 1 0 0 1 1 1v1.6a1 1 0 1 1-2 0v-1.6a1 1 0 0 1 1-1Zm7.2 0a1 1 0 0 1 1 1v1.6a1 1 0 1 1-2 0v-1.6a1 1 0 0 1 1-1Z"/></svg>
+          </a>
+        </div>
+      </section>
+
+      <section class="card c-latest">
+        <p class="kick">Latest</p>
+        <div class="row">
+          <time>2026·09·05</time>
+          <div><div class="t">Finished The Witcher 3</div></div>
+        </div>
+        <div class="row">
+          <time>2026·08·19</time>
+          <div><div class="t">Finished Hogwarts Legacy</div></div>
+        </div>
+        <div class="row">
+          <time>2026·08</time>
+          <div><div class="t">SnowballCost → EACL</div>
+            <div class="d">Submitted. What ultra-long responses cost the provider, and where a request stops paying for its GPU time.</div></div>
+        </div>
+        <div class="row">
+          <time>2026·01</time>
+          <div><div class="t">AAAI 2026, Oral</div>
+            <div class="d">“When 🙂 Turns Hostile”. Emojis as a channel past safety alignment.</div></div>
+        </div>
+        <div class="row">
+          <time>2025-26</time>
+          <div><div class="t">BeCool &amp; CoAI, Tsinghua</div>
+            <div class="d">Visiting researcher. White-box profiling of vLLM and SGLang.</div></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ---------------- rest of the bento ---------------- -->
+  <div class="grid">
+
+    <section class="card s7">
+      <h2>Research</h2>
+      <div class="split">
+        <div class="thread">
+          <h3>When support networks stop supporting</h3>
+          <p class="when">NUS · since 2024 · first author, in progress</p>
+          <p>A heterogeneous agent system of patients, clinicians and recovered peers, built to model how distress and support travel between them, and when a group tips from healing each other into reinforcing each other's distress.</p>
+          <ul class="pts">
+            <li>A <b>recovered peer</b> often does more for a patient than a professional therapist does. The simulation is built to put those two side by side.</li>
+            <li>Intervention runs both ways. The model defines a <span class="val">collapse threshold</span> for the intervener, which is a safety boundary for the person doing the helping.</li>
+            <li>Failure modes clinicians worry about: trauma bonding, peer burnout, the emotional labour carried by recovered members.</li>
+          </ul>
+          <p style="margin-top:13px;font-size:13px;">Recruiting real cohorts to validate it against is the part still open.</p>
+        </div>
+        <div class="thread">
+          <h3>The cost of ultra-long responses</h3>
+          <p class="when">BeCool &amp; CoAI, Tsinghua · 2025-2026 · in review</p>
+          <p>Autoregressive decoding makes a long response cost more than its length suggests. This work measures how much, across vLLM and SGLang, models from 7B to 397B, and context windows from 128K to 1M.</p>
+          <ul class="pts">
+            <li>Decode time turns <b>super-linear</b> at ultra-long lengths, on vLLM and SGLang alike. A linear estimate fitted on normal outputs underestimates the real cost by <span class="val">10% to 35%</span>.</li>
+            <li>A calibrated cost model gives two threshold lengths: where the linear estimate stops holding, and where a request stops paying for the GPU time it occupies. The first is a property of the model and the engine, not of the hardware.</li>
+            <li>In shared serving the normal requests stay largely unaffected. What the long ones consume is the provider's margin: a <span class="val">1%</span> burst of them holds the node for 10,895 seconds while normal traffic clears in 105.</li>
+          </ul>
+          <p style="margin-top:13px;font-size:13px;">Written up as <b>SnowballCost</b>, submitted to EACL.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card s5">
+      <h2>Papers</h2>
+      <div class="pub">
+        <p class="ttl">When 🙂 Turns Hostile: Interpreting How Emojis Trigger LLMs' Toxicity<span class="badge oral">AAAI'26 · Oral</span></p>
+        <p class="who">with Tsinghua collaborators · <b>Xijia Feng</b>, second author, implementation and large-scale validation</p>
+        <p class="g">Emojis act as a heterogeneous semantic channel that slips past safety alignment. Across 7 models and 5 languages.</p>
+      </div>
+      <div class="pub">
+        <p class="ttl">SnowballCost: A Systematic Measurement of the Impact of Ultra-Long Responses on Large Language Model Inference Services<span class="badge rev">EACL · under review</span></p>
+        <p class="who"><b>Xijia Feng</b>, first author</p>
+        <p class="g">A measurement framework for the serving cost of ultra-long responses, and a calibrated cost model that locates where a request stops paying for the GPU time it holds. The model beats a linear fit at ultra-long lengths and transfers across models and devices.</p>
+      </div>
+    </section>
+
+    
+
+    <section class="card s12">
+      <h2>Built</h2>
+      <div class="projects">
+
+        <div class="proj">
+          <div class="ph"><span class="pn">CozyPet</span><span class="pd">since 2026·04</span></div>
+          <p>A desktop pet for macOS that also starts your work. Each character carries its own persona config; dialogue runs through Gemini, GPT or Claude, and voice through ElevenLabs, so it can read a workflow or a note aloud in that character's voice.</p>
+          <p>One click on a saved workflow opens every app, page and file that job needs.</p>
+          <div class="tags"><span>macOS</span><span>LLM</span><span>ElevenLabs</span><span>YAML</span></div>
+          <a class="plink" href="https://github.com/fengxijia/CozyPet" target="_blank" rel="noopener noreferrer">github.com/fengxijia/CozyPet →</a>
+        </div>
+
+        <div class="proj">
+          <div class="ph"><span class="pn">Doro Community</span><span class="pd">since 2025·10</span></div>
+          <p>A peer support community for graduate researchers. Founder, rule maker and content creator. Researchers who came through depression or anxiety share what worked with people going through it now.</p>
+          <p>The site carries CBT self-help material, explainer videos and posts on what actually comes up: failed experiments, advisor relationships, paper pressure, isolation, procrastination.</p>
+          <p style="font-size:12.5px;">What people report there is also what the peer-support simulation was built to model.</p>
+          <div class="tags"><span>Community</span><span>CBT</span><span>Peer support</span></div>
+        </div>
+
+        <div class="proj">
+          <div class="ph"><span class="pn">LoveAudit</span><span class="pd">since 2026·01</span></div>
+          <p>An LLM walks you through your own relationship and tells you what it sees. Anonymous, no account, nothing stored server-side. About <b>2k visits</b> so far.</p>
+          <p>The framework scores value alignment, communication, conflict handling, boundaries and long-term commitment.</p>
+          <div class="tags"><span>Next.js</span><span>FastAPI</span><span>LLM</span></div>
+          <a class="plink" href="https://github.com/fengxijia/loveAudit" target="_blank" rel="noopener noreferrer">github.com/fengxijia/loveAudit →</a>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="card s5">
+      <h2>Off duty</h2>
+      <ul class="pts">
+        <li><b>The Witcher III.</b> Lilac and gooseberries. Two people used to not needing anyone, and both wrong about it. Replayed for the arguments, not the swordplay.</li>
+        <li><b>Harry Potter.</b> Read first at an age where it was about who you choose to stand next to. Reread at an age where what stands out is how much of it is about grief, and how little is about magic.</li>
+        <li><b>Rock, loud.</b> Green Day, Sum 41, Mayday 五月天, Wowkie Da 大张伟. Preferably with the guitars doing the emotional labour. It is what a long night of failed simulation runs sounds like from the inside.</li>
+        <li><b>Psychology.</b> The interest that stopped being a hobby. How someone with an automation degree ends up modelling depression treatment.</li>
+      </ul>
+    </section>
+
+    <section class="card s7">
+      <h2>CV</h2>
+      <p class="cvsub">Education</p>
+      <div class="cvrow"><div class="y">since 2023</div><div><div class="d">Ph.D., Electrical &amp; Computer Engineering</div><span class="i">National University of Singapore · advisor Biplab Sikdar, IEEE Fellow and Head of ECE</span></div></div>
+      <div class="cvrow"><div class="y">2021-22</div><div><div class="d">M.Sc., Electrical Engineering</div><span class="i">National University of Singapore · advisor Tong Heng Lee, former Vice President for Research</span></div></div>
+      <div class="cvrow"><div class="y">2016-20</div><div><div class="d">B.Eng., Automation</div><span class="i">Harbin Institute of Technology · School of Information Science and Engineering</span></div></div>
+      <p class="cvsub">Experience</p>
+      <div class="cvrow"><div class="y">2025-26</div><div><div class="d">Visiting Researcher</div><span class="i">BeCool and CoAI Group, Tsinghua University</span></div></div>
+      <p class="cvsub">Awards</p>
+      <div class="cvrow"><div class="y">2026</div><div><div class="d">Oral presentation, AAAI 2026</div><span class="i">top ~5% of accepted papers</span></div></div>
+      <div class="cvrow"><div class="y">2020</div><div><div class="d">Outstanding Student and Outstanding Graduate</div><span class="i">Harbin Institute of Technology</span></div></div>
+      <div class="tags" style="margin-top:22px;">
+        <span>Python</span><span>PyTorch</span><span>vLLM</span><span>SGLang</span><span>FastAPI</span><span>React</span><span>LaTeX</span>
+      </div>
+    </section>
+
+    <section class="card s12">
+      <h2>Gallery</h2>
+      <p>Drawing is a way into an inner world, and a way to stay there for a while. Both pictures are drawn by hand.</p>
+      <p>The camera did not replace painting. It gave painting somewhere else to go. AIGC looks like the same kind of arrival, a new source of material and a strong tool in the hand of whoever is drawing.</p>
+      <div class="art">
+        <figure class="gl" data-img="hide">
+          <img alt="Hide and Seek. A hand-drawn digital painting of two figures almost entirely in shadow, lit by a few pink traces." src="assets/img/hide-and-seek.jpg">
+          <figcaption><b>Hide and Seek</b></figcaption>
+        </figure>
+        <figure class="gl" data-img="jl">
+          <img alt="Justice League. Hand-drawn fan art in a hard-inked comic style." src="assets/img/justice-league.jpg">
+          <figcaption><b>Justice League</b></figcaption>
+        </figure>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <span>Singapore · Beijing</span>
+    <span><a href="mailto:xijia.feng@u.nus.edu">xijia.feng@u.nus.edu</a> · <a href="https://github.com/fengxijia" target="_blank" rel="noopener noreferrer">github.com/fengxijia</a></span>
+  </footer>
+</div>
+
+<script src="assets/js/three.min.js"></script>
+<script>
+/* ======================================================================
+   One fixed WebGL surface, two kinds of tenant:
+
+     · a live constellation that lives inside the stage card
+     · the paintings, which are planes parked on their own <img> boxes
+
+   Both are placed from getBoundingClientRect() every frame, so nothing has
+   to know about scroll position, card size, or reflow. The camera is set up
+   so one world unit is one CSS pixel, which is what makes that possible.
+   ====================================================================== */
+(function () {
+  "use strict";
+  var canvas = document.getElementById("gl");
+  var ok = false;
+  try { ok = !!(canvas.getContext("webgl") || canvas.getContext("experimental-webgl")); } catch (e) {}
+  if (!ok || typeof THREE === "undefined") return;
+
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var PERSPECTIVE = 1400;
+  var COL = { stable: 0x7FA0F2, amber: 0xE7A54E, tie: 0x2C3A57, tieDown: 0x6B4E23 };
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(50, 1, 1, 6000);
+  camera.position.z = PERSPECTIVE;
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearAlpha(0);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+  var key = new THREE.PointLight(0xffffff, 0.9, 4000, 1.6);
+  key.position.set(-300, 400, 900); scene.add(key);
+
+  // ---------------------------------------------------------------- the model
+  // Same linear-threshold cascade as the research: a node tips once enough of
+  // its ties have. Seeded share eta, one run per slider position.
+  var N = 46, THETA = 0.34, ROUNDS = 30;
+  function rng(seed){ return function(){ seed = (seed*1664525+1013904223) % 4294967296; return seed/4294967296; }; }
+  var rnd = rng(20260907), pos = [], i, j, k;
+  for (i = 0; i < N; i++) {                       // points on a squashed ball
+    var u = rnd()*2-1, th = rnd()*Math.PI*2, r = Math.pow(rnd(), 0.42);
+    var s = Math.sqrt(1-u*u);
+    pos.push(new THREE.Vector3(r*s*Math.cos(th)*1.28, r*u*0.86, r*s*Math.sin(th)*1.28));
+  }
+  var adj = []; for (i = 0; i < N; i++) adj.push([]);
+  for (i = 0; i < N; i++) {
+    var d = [];
+    for (j = 0; j < N; j++) if (j !== i) d.push([pos[i].distanceToSquared(pos[j]), j]);
+    d.sort(function(a,b){ return a[0]-b[0]; });
+    for (k = 0; k < 3; k++) {
+      var m = d[k][1];
+      if (adj[i].indexOf(m) < 0) adj[i].push(m);
+      if (adj[m].indexOf(i) < 0) adj[m].push(i);
+    }
+  }
+  var edges = [];
+  for (i = 0; i < N; i++) for (j = 0; j < adj[i].length; j++) if (adj[i][j] > i) edges.push([i, adj[i][j]]);
+  var order = []; for (i = 0; i < N; i++) order.push(i);
+  var sr = rng(99137);
+  for (i = N-1; i > 0; i--){ var q = Math.floor(sr()*(i+1)), t = order[i]; order[i] = order[q]; order[q] = t; }
+
+  function cascade(eta) {
+    var s = new Array(N), seeds = Math.round(eta*N);
+    for (i = 0; i < N; i++) s[i] = false;
+    for (i = 0; i < seeds; i++) s[order[i]] = true;
+    for (var r = 0; r < ROUNDS; r++) {
+      var next = s.slice(), changed = false;
+      for (i = 0; i < N; i++) {
+        if (s[i]) continue;
+        var hit = 0;
+        for (j = 0; j < adj[i].length; j++) if (s[adj[i][j]]) hit++;
+        if (adj[i].length && hit/adj[i].length >= THETA) { next[i] = true; changed = true; }
+      }
+      s = next; if (!changed) break;
+    }
+    var down = 0; for (i = 0; i < N; i++) if (s[i]) down++;
+    return { states: s, capacity: 1 - down/N };
+  }
+  var etaC = null;
+  for (var e = 0; e <= 45 && etaC === null; e++) if (cascade(e/100).capacity < 0.5) etaC = e/100;
+  if (etaC === null) etaC = 0.45;
+
+  // ---------------------------------------------------------------- constellation
+  var net = new THREE.Group(); scene.add(net);
+  var dotGeo = new THREE.SphereGeometry(1, 12, 10);
+  var dots = [], dotMats = [];
+  for (i = 0; i < N; i++) {
+    var mm = new THREE.MeshStandardMaterial({ color: COL.stable, emissive: COL.stable,
+      emissiveIntensity: 0.75, roughness: 0.35, metalness: 0.1 });
+    var mesh = new THREE.Mesh(dotGeo, mm);
+    mesh.position.copy(pos[i]); mesh.scale.setScalar(0.028);
+    net.add(mesh); dots.push(mesh); dotMats.push(mm);
+  }
+  var lineGeo = new THREE.BufferGeometry();
+  var lp = new Float32Array(edges.length * 6), lc = new Float32Array(edges.length * 6);
+  for (i = 0; i < edges.length; i++) {
+    var a = pos[edges[i][0]], b = pos[edges[i][1]];
+    lp.set([a.x,a.y,a.z,b.x,b.y,b.z], i*6);
+  }
+  lineGeo.setAttribute("position", new THREE.BufferAttribute(lp, 3));
+  lineGeo.setAttribute("color", new THREE.BufferAttribute(lc, 3));
+  var lines = new THREE.LineSegments(lineGeo,
+    new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85 }));
+  net.add(lines);
+
+  var cs = new THREE.Color(), cd = new THREE.Color();
+  function paint(states) {
+    for (var n = 0; n < N; n++) {
+      var down = states[n];
+      dotMats[n].color.setHex(down ? COL.amber : COL.stable);
+      dotMats[n].emissive.setHex(down ? COL.amber : COL.stable);
+      dots[n].scale.setScalar(down ? 0.036 : 0.026);
+    }
+    for (var q = 0; q < edges.length; q++) {
+      var both = states[edges[q][0]] && states[edges[q][1]];
+      (both ? cd.setHex(COL.tieDown) : cs.setHex(COL.tie));
+      var c = both ? cd : cs;
+      lc.set([c.r,c.g,c.b,c.r,c.g,c.b], q*6);
+    }
+    lineGeo.attributes.color.needsUpdate = true;
+  }
+
+  var slider = document.getElementById("eta"), verdict = document.getElementById("verdict");
+  function run(eta) {
+    var res = cascade(eta);
+    paint(res.states);
+    var bad = res.capacity < 0.5;
+    verdict.textContent = bad ? "collapsed" : "stable";
+    verdict.className = bad ? "bad" : "";
+  }
+  slider.addEventListener("input", function(){ run(+slider.value/100); });
+  slider.value = Math.max(0, Math.round(etaC*100) - 5);
+  run(+slider.value/100);
+
+  // ---------------------------------------------------------------- paintings
+  var VERT = [
+    "uniform float uVel; uniform float uHover; varying vec2 vUv; varying float vB;",
+    "void main(){ vUv = uv; vec3 p = position;",
+    "  float arch = sin(uv.x*3.14159)*sin(uv.y*3.14159);",
+    "  float bend = arch*uVel*0.85;",
+    // Scroll still bends the plane; hover lifts it flat. Warping a painting
+    // on hover distorts the work itself, which is the one thing it must not do.
+    "  p.z += bend + uHover*26.0; vB = bend;",
+    "  gl_Position = projectionMatrix*modelViewMatrix*vec4(p,1.0); }"
+  ].join("\n");
+  var FRAG = [
+    "uniform sampler2D uTex; uniform float uVel; uniform float uHover;",
+    "uniform vec2 uSize; uniform float uRadius;",
+    "varying vec2 vUv; varying float vB;",
+    "float box(vec2 p, vec2 b, float r){ vec2 q = abs(p)-b+r;",
+    "  return min(max(q.x,q.y),0.0)+length(max(q,0.0))-r; }",
+    "void main(){",
+    "  float sep = clamp(uVel*0.00045, -0.006, 0.006);",
+    // hover eases the image in toward its own centre — a zoom inside a fixed
+    // frame, so the picture never changes shape and never leaves its box
+    "  vec2 uv = (vUv - 0.5) / (1.0 + uHover*0.055) + 0.5;",
+    "  float r = texture2D(uTex, uv+vec2(sep,0.0)).r;",
+    "  vec4  g = texture2D(uTex, uv);",
+    "  float b = texture2D(uTex, uv-vec2(sep,0.0)).b;",
+    "  vec3 col = (vec3(r,g.g,b) + vB*0.0016) * (1.0 + uHover*0.11);",
+    "  float d = box((vUv-0.5)*uSize, uSize*0.5, uRadius);",
+    "  float aa = 1.0 - smoothstep(-1.0, 1.0, d);",
+    "  gl_FragColor = vec4(col, g.a*aa); }"
+  ].join("\n");
+
+  var planes = [];
+  function buildPlanes() {
+    planes.forEach(function(p){ scene.remove(p.mesh); p.mesh.geometry.dispose();
+      p.mesh.material.uniforms.uTex.value.dispose(); p.mesh.material.dispose(); });
+    planes = [];
+    var figs = [].slice.call(document.querySelectorAll("figure.gl"));
+    figs.forEach(function (f) { f.classList.remove("gl-live"); });
+    figs.forEach(function (fig) {
+      var img = fig.querySelector("img");
+      if (!img) return;
+      if (!img.complete || !img.naturalWidth) { img.addEventListener("load", soon, { once:true }); return; }
+      var r = img.getBoundingClientRect();
+      if (r.width < 2) return;
+      var tex = new THREE.Texture(img);
+      tex.needsUpdate = true;
+      tex.minFilter = tex.magFilter = THREE.LinearFilter;
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;    // NPOT safety on WebGL1
+      tex.generateMipmaps = false;
+      var mat = new THREE.ShaderMaterial({
+        uniforms:{ uTex:{value:tex}, uVel:{value:0}, uHover:{value:0},
+                   uSize:{value:new THREE.Vector2(r.width, r.height)}, uRadius:{value:14} },
+        vertexShader: VERT, fragmentShader: FRAG, transparent: true });
+      var mesh = new THREE.Mesh(new THREE.PlaneGeometry(1,1,26,18), mat);
+      mesh.scale.set(r.width, r.height, 1);
+      scene.add(mesh);
+      fig.classList.add("gl-live");        // now, and only now, hide the img
+      planes.push({ mesh: mesh, el: img, mat: mat, hover: 0 });
+    });
+  }
+
+  // ---------------------------------------------------------------- frame
+  var stage = document.getElementById("stage");
+  var ptr = { x:-9e9, y:-9e9 };
+  window.addEventListener("pointermove", function(ev){ ptr.x = ev.clientX; ptr.y = ev.clientY; });
+  window.addEventListener("pointerleave", function(){ ptr.x = ptr.y = -9e9; });
+
+  function resize() {
+    var w = window.innerWidth, h = window.innerHeight;
+    camera.fov = 2*Math.atan((h/2)/PERSPECTIVE)*(180/Math.PI);
+    camera.aspect = w/h; camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+    buildPlanes();
+  }
+  var rt = null;
+  function soon(){ clearTimeout(rt); rt = setTimeout(resize, 150); }
+  window.addEventListener("resize", soon);
+
+  var lastY = window.scrollY, vel = 0, t0 = performance.now();
+  function frame(now) {
+    var t = (now - t0) / 1000;
+    var w = window.innerWidth, h = window.innerHeight;
+
+    var raw = window.scrollY - lastY; lastY = window.scrollY;
+    vel += (raw - vel) * 0.14;
+    if (Math.abs(vel) < 0.02) vel = 0;
+    if (reduced) vel = 0;
+
+    // constellation → parked inside the stage card
+    var sr2 = stage.getBoundingClientRect();
+    net.visible = sr2.bottom > -200 && sr2.top < h + 200 && sr2.width > 2;
+    if (net.visible) {
+      net.position.set(sr2.left - w/2 + sr2.width/2, -(sr2.top - h/2 + sr2.height/2), 0);
+      net.scale.setScalar(Math.min(sr2.width, sr2.height) * 0.34);
+      if (!reduced) { net.rotation.y = t * 0.16; net.rotation.x = Math.sin(t*0.21)*0.14; }
+    }
+
+    for (var i2 = 0; i2 < planes.length; i2++) {
+      var p = planes[i2], r = p.el.getBoundingClientRect();
+      p.mesh.position.set(r.left - w/2 + r.width/2, -(r.top - h/2 + r.height/2), 0);
+      p.mesh.visible = r.bottom > -80 && r.top < h + 80;
+      if (Math.abs(r.width - p.mesh.scale.x) > 1) soon();
+      var over = p.mesh.visible && ptr.x >= r.left && ptr.x <= r.right && ptr.y >= r.top && ptr.y <= r.bottom;
+      p.hover += ((over && !reduced ? 1 : 0) - p.hover) * 0.1;
+      p.mat.uniforms.uHover.value = p.hover;
+      p.mat.uniforms.uVel.value = vel;
+    }
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+
+  document.documentElement.classList.add("gl-on");
+  resize();
+  requestAnimationFrame(frame);
+})();
+</script>
