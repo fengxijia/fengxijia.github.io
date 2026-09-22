@@ -172,6 +172,9 @@
   /* Only hide an image once its plane is actually on the scene. If a build
      fails for any reason, that image stays visible instead of vanishing. */
   figure.gl.gl-live img{opacity:0;}
+  figure.gl .artlink{display:block;line-height:0;cursor:pointer;}
+  figure.gl figcaption a{color:inherit;text-decoration:none;}
+  figure.gl figcaption a:hover{color:var(--accent);}
   figure.gl figcaption{
     margin:11px 2px 0;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--faint);
     display:flex;gap:9px;align-items:baseline;
@@ -498,12 +501,12 @@
       <p>The camera did not replace painting, and neither will AIGC. AIGC will become a powerful new tool for the art of painting, and bring it a prosperity it has never seen.</p>
       <div class="art">
         <figure class="gl" data-img="hide">
-          <img alt="Hide and Seek. A hand-drawn digital painting of two figures almost entirely in shadow, lit by a few pink traces." src="assets/img/hide-and-seek.jpg">
-          <figcaption><b>Hide and Seek</b></figcaption>
+          <a class="artlink" href="https://www.bilibili.com/video/BV1Kw41167XX/" target="_blank" rel="noopener noreferrer" aria-label="Watch the drawing process on bilibili"><img alt="Hide and Seek. A hand-drawn digital painting of two figures almost entirely in shadow, lit by a few pink traces." src="assets/img/hide-and-seek.jpg"></a>
+          <figcaption><a href="https://www.bilibili.com/video/BV1Kw41167XX/" target="_blank" rel="noopener noreferrer"><b>Hide and Seek</b></a></figcaption>
         </figure>
         <figure class="gl" data-img="jl">
-          <img alt="Justice League. Hand-drawn fan art in a hard-inked comic style." src="assets/img/justice-league.jpg">
-          <figcaption><b>Justice League</b></figcaption>
+          <a class="artlink" href="https://www.bilibili.com/video/BV19z4y1K731/" target="_blank" rel="noopener noreferrer" aria-label="Watch the drawing process on bilibili"><img alt="Justice League. Hand-drawn fan art in a hard-inked comic style." src="assets/img/justice-league.jpg"></a>
+          <figcaption><a href="https://www.bilibili.com/video/BV19z4y1K731/" target="_blank" rel="noopener noreferrer"><b>Justice League</b></a></figcaption>
         </figure>
       </div>
     </section>
