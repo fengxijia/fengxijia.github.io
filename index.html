@@ -1,3 +1,6 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Xijia Feng</title>
 <link rel="stylesheet" href="assets/fonts/fonts.css">
 <style>
@@ -131,7 +134,7 @@
   .card p b{color:var(--ink);font-weight:600;}
   ul.pts{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:9px;}
   ul.pts li{position:relative;padding-left:17px;color:var(--muted);font-size:13.5px;line-height:1.5;}
-  ul.pts li::before{content:"";position:absolute;left:0;top:.66em;width:8px;height:1px;background:var(--accent);}
+  ul.pts li::before{content:"";position:absolute;left:1px;top:.62em;width:5px;height:5px;border-radius:50%;background:var(--accent);}
   ul.pts li b{color:var(--ink);font-weight:600;}
   .val{font-family:var(--mono);color:var(--amber);font-weight:700;font-size:.95em;}
 
@@ -228,6 +231,24 @@
     body{padding:9px;}
     .card{padding:20px;border-radius:18px;}
     .links{grid-template-columns:repeat(4,1fr);}
+  }
+
+  /* ---------- phone ---------- */
+  @media (max-width:620px){
+    body{padding:10px;}
+    h1{font-size:46px;}
+    .intro-body{padding:4px 20px 22px;}
+    .links{grid-template-columns:repeat(3,1fr);}
+    .c-stage{min-height:400px;}
+    .stage-slot{min-height:230px;}
+    .proj{flex-basis:84%;}
+    .plink{font-size:11px;overflow-wrap:anywhere;}
+    .cvrow{grid-template-columns:62px minmax(0,1fr);gap:12px;}
+    .cvrow .y{font-size:10.5px;}
+    .cvrow .i{font-size:10.5px;line-height:1.5;}
+    .row{gap:11px;}
+    .row time{min-width:58px;font-size:10.5px;}
+    footer{justify-content:flex-start;gap:8px 18px;padding:20px 6px 8px;}
   }
 </style>
 
@@ -656,7 +677,7 @@
     net.visible = sr2.bottom > -200 && sr2.top < h + 200 && sr2.width > 2;
     if (net.visible) {
       net.position.set(sr2.left - w/2 + sr2.width/2, -(sr2.top - h/2 + sr2.height/2), 0);
-      net.scale.setScalar(Math.min(sr2.width, sr2.height) * 0.34);
+      net.scale.setScalar(Math.min(sr2.width * 0.44, sr2.height * 0.34));
       if (!reduced) { net.rotation.y = t * 0.16; net.rotation.x = Math.sin(t*0.21)*0.14; }
     }
 
