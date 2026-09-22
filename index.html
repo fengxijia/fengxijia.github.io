@@ -626,10 +626,10 @@
   // Four mood tiers, same thresholds as the word under the slider. One colour per tier,
   // so the dots and the word always match.
   var TIERS = [
-    { word: "drained",    hex: 0x4A5A8C, css: "#6F80B3", glow: 0.30, size: 0.020 },
-    { word: "getting by", hex: 0x9B7BE0, css: "#A78BE0", glow: 0.40, size: 0.026 },
-    { word: "lighter",    hex: 0xE2C15A, css: "#E9D48F", glow: 0.45, size: 0.031 },
-    { word: "bright",     hex: 0xFFB020, css: "#FFC24D", glow: 0.55, size: 0.036 }
+    { word: "drained",    hex: 0x3A4870, css: "#6F80B3", glow: 0.25, size: 0.020 },
+    { word: "getting by", hex: 0x8A97D6, css: "#A3AEE0", glow: 0.45, size: 0.026 },
+    { word: "lighter",    hex: 0xE3D6AE, css: "#E6D9A8", glow: 0.75, size: 0.031 },
+    { word: "bright",     hex: 0xFFFFFF, css: "#FFF7E0", glow: 1.10, size: 0.036 }
   ];
   function tier(mood) { return mood < 0.3 ? 0 : mood < 0.55 ? 1 : mood < 0.8 ? 2 : 3; }
   var TIER_COLORS = TIERS.map(function(t){ return new THREE.Color(t.hex); });
