@@ -82,11 +82,6 @@
   /* ---------- the 3D card ---------- */
   .c-stage{display:flex;flex-direction:column;min-height:430px;padding:0;}
   .stage-slot{flex:1;min-height:250px;position:relative;}
-  .me-tag{
-    position:absolute;left:50%;top:50%;transform:translate(18px,-26px);
-    font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--faint);pointer-events:none;
-  }
   .ctl label{min-width:82px;}
   .stage-foot{padding:0 26px 24px;text-align:center;}
   .stage-foot h3{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 0 5px;}
@@ -260,7 +255,7 @@
 
     <!-- ---------------- the live 3D card ---------------- -->
     <section class="card c-stage">
-      <div class="stage-slot" id="stage" data-scene="net"><span class="me-tag">Xijia</span></div>
+      <div class="stage-slot" id="stage" data-scene="net"></div>
       <div class="stage-foot">
         <h3>A support network, running</h3>
         <p>The dot in the middle is her. Slide to meet more people. Support flows both ways, so friends lift each other too.</p>
