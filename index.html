@@ -324,41 +324,7 @@
   <!-- ---------------- rest of the bento ---------------- -->
   <div class="grid">
 
-    <section class="card s7">
-      <h2>Research</h2>
-      <div class="split">
-        <div class="thread">
-          <h3>When support networks stop supporting</h3>
-          <p class="when">NUS · since 2024 · first author, in progress</p>
-          <p>A heterogeneous agent system of patients, clinicians and recovered peers, built to model how distress and support travel between them, and when a group tips from healing each other into reinforcing each other's distress.</p>
-          <ul class="pts">
-            <li>A <b>recovered peer</b> often does more for a patient than a professional therapist does. The simulation is built to put those two side by side.</li>
-            <li>Intervention runs both ways. The model defines a <span class="val">collapse threshold</span> for the intervener, which is a safety boundary for the person doing the helping.</li>
-            <li>Failure modes clinicians worry about: trauma bonding, peer burnout, the emotional labour carried by recovered members.</li>
-          </ul>
-          <p style="margin-top:13px;font-size:13px;">Recruiting real cohorts to validate it against is the part still open.</p>
-        </div>
-        <div class="thread">
-          <h3>The cost of ultra-long responses</h3>
-          <p class="when">BeCool &amp; CoAI, Tsinghua · 2025-2026 · in progress</p>
-          <p>Autoregressive decoding makes a long response cost more than its length suggests. This work measures how much, across vLLM and SGLang, models from 7B to 397B, and context windows from 128K to 1M.</p>
-          <ul class="pts">
-            <li>Decode time turns <b>super-linear</b> at ultra-long lengths, on vLLM and SGLang alike. A linear estimate fitted on normal outputs underestimates the real cost.</li>
-            <li>A calibrated cost model gives two threshold lengths: where the linear estimate stops holding, and where a request stops paying for the GPU time it occupies. The first is a property of the model and the engine, not of the hardware.</li>
-            <li>In shared serving the normal requests stay largely unaffected. What the long ones consume is the provider's margin: a small burst of them holds the node long after normal traffic has cleared.</li>
-          </ul>
-        </div>
-      </div>
-    </section>
 
-    <section class="card s5">
-      <h2>Papers</h2>
-      <div class="pub">
-        <p class="ttl">When 🙂 Turns Hostile: Interpreting How Emojis Trigger LLMs' Toxicity<span class="badge oral">AAAI'26 · Oral</span></p>
-        <p class="who">with Tsinghua collaborators · <b>Xijia Feng</b>, second author, implementation and large-scale validation</p>
-        <p class="g">Emojis act as a heterogeneous semantic channel that slips past safety alignment. Across 7 models and 5 languages.</p>
-      </div>
-    </section>
 
     
 
