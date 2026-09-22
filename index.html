@@ -560,7 +560,7 @@
   // adds a tie to her and up to two ties to friends already met. Every person
   // has a baseline mood; support from neighbours lifts it, with diminishing
   // returns, and a lifted friend gives more back. Run to a fixed point.
-  var N = 46, ME = 0, BETA = 0.22, ROUNDS = 40;
+  var N = 46, ME = 0, BETA = 0.20, GAMMA = 0.10, ROUNDS = 40;
   function rng(seed){ return function(){ seed = (seed*1664525+1013904223) % 4294967296; return seed/4294967296; }; }
   var rnd = rng(20260907), pos = [new THREE.Vector3(0,0,0)], base = [0.12], i, j, k;
   for (i = 1; i < N; i++) {                       // points on a squashed ball, none too close to the middle
@@ -585,16 +585,19 @@
     }
     for (i = 0; i < met.length; i++) {
       var f = met[i]; tie(ME, f);
-      var d = [], kk = 2 + Math.floor(count / 5);     // the bigger the circle, the more friends know each other
+      var d = [];                                    // friends support the two friends nearest to them
       for (j = 0; j < met.length; j++) if (met[j] !== f) d.push([pos[f].distanceToSquared(pos[met[j]]), met[j]]);
       d.sort(function(a,b){ return a[0]-b[0]; });
-      for (k = 0; k < kk && k < d.length; k++) tie(f, d[k][1]);
+      for (k = 0; k < 2 && k < d.length; k++) tie(f, d[k][1]);
     }
     for (var rd = 0; rd < ROUNDS; rd++) {
       var next = m.slice();
+      // warmth of the whole circle: the bigger and happier the group, the more everyone in it gets back
+      var sum = 0; for (j = 0; j < met.length; j++) sum += m[met[j]];
+      var warmth = met.length ? (sum / met.length) * Math.pow(met.length, 1.3) : 0;
       for (i = 0; i < N; i++) {
         if (!known[i]) continue;
-        var got = 0;
+        var got = GAMMA * warmth;
         for (j = 0; j < adj[i].length; j++) got += m[adj[i][j]];
         next[i] = base[i] + (1 - base[i]) * (1 - Math.exp(-BETA * got));
       }
