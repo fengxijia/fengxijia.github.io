@@ -87,8 +87,9 @@
   }
 
   /* ---------- the 3D card ---------- */
-  .c-stage{display:flex;flex-direction:column;min-height:430px;padding:0;}
-  .stage-slot{flex:1;min-height:250px;position:relative;}
+  .midcol{display:flex;flex-direction:column;gap:14px;min-width:0;}
+  .c-stage{display:flex;flex-direction:column;flex:1;min-height:360px;padding:0;}
+  .stage-slot{flex:1;min-height:190px;position:relative;}
   .stage-foot{padding:0 26px 24px;text-align:center;}
   .stage-foot h3{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 0 5px;}
   .stage-foot p{color:var(--muted);font-size:13.5px;margin:0 0 16px;}
@@ -96,7 +97,7 @@
   .ctl label{font-family:var(--mono);font-size:11px;color:var(--faint);white-space:nowrap;}
   .ctl output{
     font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--stable);min-width:74px;text-align:right;
+    text-transform:uppercase;color:var(--stable);min-width:74px;text-align:right;white-space:nowrap;
   }
   .ctl output.bad{color:var(--amber);}
   input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:28px;background:transparent;margin:0;cursor:grab;touch-action:none;}
@@ -283,8 +284,8 @@
     h1{font-size:46px;}
     .intro-body{padding:4px 20px 22px;}
     .links{grid-template-columns:repeat(3,1fr);}
-    .c-stage{min-height:400px;}
-    .stage-slot{min-height:230px;}
+    .c-stage{min-height:380px;}
+    .stage-slot{min-height:220px;}
     .proj{flex-basis:84%;}
     .plink{font-size:11px;overflow-wrap:anywhere;}
     .cvrow{grid-template-columns:62px minmax(0,1fr);gap:12px;}
@@ -324,7 +325,8 @@
       </div>
     </section>
 
-    <!-- ---------------- the live 3D card ---------------- -->
+    <!-- ---------------- the live 3D cards ---------------- -->
+    <div class="midcol">
     <section class="card c-stage">
       <div class="stage-slot" id="stage" data-scene="net"></div>
       <div class="stage-foot">
@@ -337,6 +339,19 @@
         </div>
       </div>
     </section>
+    <section class="card c-stage">
+      <div class="stage-slot" id="stage2" data-scene="games"></div>
+      <div class="stage-foot">
+        <h3>No work is really important</h3>
+        <p>Every man should play video games.</p>
+        <div class="ctl">
+          <label for="games">Games</label>
+          <input type="range" id="games" min="0" max="5" value="5" step="1" aria-describedby="verdict2">
+          <output id="verdict2">fully immersed</output>
+        </div>
+      </div>
+    </section>
+    </div>
 
     <!-- ---------------- right column ---------------- -->
     <div class="rightcol">
@@ -583,71 +598,9 @@
   // adds a tie to her and up to two ties to friends already met. Every person
   // has a baseline mood; support from neighbours lifts it, with diminishing
   // returns, and a lifted friend gives more back. Run to a fixed point.
+  // The same machinery draws the second card, where the dots are games.
   var N = 46, ME = 0, BETA = 0.20, GAMMA = 0.10, ROUNDS = 40;
   function rng(seed){ return function(){ seed = (seed*1664525+1013904223) % 4294967296; return seed/4294967296; }; }
-  var rnd = rng(20260907), pos = [new THREE.Vector3(0,0,0)], base = [0.12], i, j, k;
-  for (i = 1; i < N; i++) {                       // points on a squashed ball, none too close to the middle
-    var u = rnd()*2-1, th = rnd()*Math.PI*2, r = 0.34 + 0.66*Math.pow(rnd(), 0.55);
-    var sq = Math.sqrt(1-u*u);
-    pos.push(new THREE.Vector3(r*sq*Math.cos(th)*1.28, r*u*0.86, r*sq*Math.sin(th)*1.28));
-    base.push(0.32 + 0.36*rnd());
-  }
-  var order = []; for (i = 1; i < N; i++) order.push(i);   // the order people are met
-  var sr = rng(99137);
-  for (i = order.length-1; i > 0; i--){ var q = Math.floor(sr()*(i+1)), t = order[i]; order[i] = order[q]; order[q] = t; }
-
-  function simulate(count) {
-    var known = new Array(N), adj = [], m = base.slice(), edges = [];
-    for (i = 0; i < N; i++) { known[i] = false; adj.push([]); }
-    known[ME] = true;
-    var met = order.slice(0, count);
-    for (i = 0; i < met.length; i++) known[met[i]] = true;
-    function tie(a, b) {
-      if (adj[a].indexOf(b) >= 0) return;
-      adj[a].push(b); adj[b].push(a); edges.push([a, b]);
-    }
-    for (i = 0; i < met.length; i++) {
-      var f = met[i]; tie(ME, f);
-      var d = [];                                    // friends support the two friends nearest to them
-      for (j = 0; j < met.length; j++) if (met[j] !== f) d.push([pos[f].distanceToSquared(pos[met[j]]), met[j]]);
-      d.sort(function(a,b){ return a[0]-b[0]; });
-      for (k = 0; k < 2 && k < d.length; k++) tie(f, d[k][1]);
-    }
-    for (var rd = 0; rd < ROUNDS; rd++) {
-      var next = m.slice();
-      // warmth of the whole circle: the bigger and happier the group, the more everyone in it gets back
-      var sum = 0; for (j = 0; j < met.length; j++) sum += m[met[j]];
-      var warmth = met.length ? (sum / met.length) * Math.pow(met.length, 1.3) : 0;
-      for (i = 0; i < N; i++) {
-        if (!known[i]) continue;
-        var got = GAMMA * warmth;
-        for (j = 0; j < adj[i].length; j++) got += m[adj[i][j]];
-        next[i] = base[i] + (1 - base[i]) * (1 - Math.exp(-BETA * got));
-      }
-      m = next;
-    }
-    return { known: known, mood: m, edges: edges };
-  }
-
-  // ---------------------------------------------------------------- constellation
-  var net = new THREE.Group(); scene.add(net);
-  var dotGeo = new THREE.SphereGeometry(1, 12, 10);
-  var dots = [], dotMats = [];
-  for (i = 0; i < N; i++) {
-    var mm = new THREE.MeshStandardMaterial({ color: COL.stable, emissive: COL.stable,
-      emissiveIntensity: 0.75, roughness: 0.35, metalness: 0.1 });
-    var mesh = new THREE.Mesh(dotGeo, mm);
-    mesh.position.copy(pos[i]); mesh.scale.setScalar(0.028);
-    net.add(mesh); dots.push(mesh); dotMats.push(mm);
-  }
-  var MAXE = N * 12;
-  var lineGeo = new THREE.BufferGeometry();
-  var lp = new Float32Array(MAXE * 6), lc = new Float32Array(MAXE * 6);
-  lineGeo.setAttribute("position", new THREE.BufferAttribute(lp, 3));
-  lineGeo.setAttribute("color", new THREE.BufferAttribute(lc, 3));
-  var lines = new THREE.LineSegments(lineGeo,
-    new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85 }));
-  net.add(lines);
 
   // Four mood tiers, same thresholds as the word under the slider. One colour per tier,
   // so the dots and the word always match.
@@ -661,40 +614,118 @@
   var TIER_COLORS = TIERS.map(function(t){ return new THREE.Color(t.hex); });
   var STRANGER = new THREE.Color(0x2A3140);
   var TIE_LOW = new THREE.Color(0x2C3A57), TIE_HIGH = new THREE.Color(0x7A6AA8);
-  var cc = new THREE.Color();
-  function paint(res) {
-    for (var n = 0; n < N; n++) {
-      var mat = dotMats[n];
-      if (!res.known[n]) {
-        mat.color.copy(STRANGER); mat.emissive.copy(STRANGER); mat.emissiveIntensity = 0.25;
-        dots[n].scale.setScalar(0.013);
-        continue;
+  var dotGeo = new THREE.SphereGeometry(1, 12, 10);
+
+  // cfg: { stage, slider, verdict, seed, word(count, moodOfMe) -> {word, css} }
+  function buildStage(cfg) {
+    var rnd = rng(cfg.seed), pos = [new THREE.Vector3(0,0,0)], base = [0.12], i, j, k;
+    for (i = 1; i < N; i++) {                     // points on a squashed ball, none too close to the middle
+      var u = rnd()*2-1, th = rnd()*Math.PI*2, r = 0.34 + 0.66*Math.pow(rnd(), 0.55);
+      var sq = Math.sqrt(1-u*u);
+      pos.push(new THREE.Vector3(r*sq*Math.cos(th)*1.28, r*u*0.86, r*sq*Math.sin(th)*1.28));
+      base.push(0.32 + 0.36*rnd());
+    }
+    var order = []; for (i = 1; i < N; i++) order.push(i);   // the order people are met
+    var sr = rng(cfg.seed + 78877);
+    for (i = order.length-1; i > 0; i--){ var q = Math.floor(sr()*(i+1)), t = order[i]; order[i] = order[q]; order[q] = t; }
+
+    function simulate(count) {
+      var known = new Array(N), adj = [], m = base.slice(), edges = [];
+      for (i = 0; i < N; i++) { known[i] = false; adj.push([]); }
+      known[ME] = true;
+      var met = order.slice(0, count);
+      for (i = 0; i < met.length; i++) known[met[i]] = true;
+      function tie(a, b) {
+        if (adj[a].indexOf(b) >= 0) return;
+        adj[a].push(b); adj[b].push(a); edges.push([a, b]);
       }
-      var tr = TIERS[tier(res.mood[n])], col = TIER_COLORS[tier(res.mood[n])];
-      mat.color.copy(col).multiplyScalar(0.55); mat.emissive.copy(col); mat.emissiveIntensity = tr.glow;
-      dots[n].scale.setScalar(n === ME ? 0.052 : tr.size);
+      for (i = 0; i < met.length; i++) {
+        var f = met[i]; tie(ME, f);
+        var d = [];                                  // friends support the two friends nearest to them
+        for (j = 0; j < met.length; j++) if (met[j] !== f) d.push([pos[f].distanceToSquared(pos[met[j]]), met[j]]);
+        d.sort(function(a,b){ return a[0]-b[0]; });
+        for (k = 0; k < 2 && k < d.length; k++) tie(f, d[k][1]);
+      }
+      for (var rd = 0; rd < ROUNDS; rd++) {
+        var next = m.slice();
+        // warmth of the whole circle: the bigger and happier the group, the more everyone in it gets back
+        var sum = 0; for (j = 0; j < met.length; j++) sum += m[met[j]];
+        var warmth = met.length ? (sum / met.length) * Math.pow(met.length, 1.3) : 0;
+        for (i = 0; i < N; i++) {
+          if (!known[i]) continue;
+          var got = GAMMA * warmth;
+          for (j = 0; j < adj[i].length; j++) got += m[adj[i][j]];
+          next[i] = base[i] + (1 - base[i]) * (1 - Math.exp(-BETA * got));
+        }
+        m = next;
+      }
+      return { known: known, mood: m, edges: edges };
     }
-    for (var q = 0; q < res.edges.length; q++) {
-      var a = res.edges[q][0], b = res.edges[q][1];
-      lp.set([pos[a].x,pos[a].y,pos[a].z,pos[b].x,pos[b].y,pos[b].z], q*6);
-      cc.copy(TIE_LOW).lerp(TIE_HIGH, Math.min(tier(res.mood[a]), tier(res.mood[b])) / 3);
-      lc.set([cc.r,cc.g,cc.b,cc.r,cc.g,cc.b], q*6);
+
+    // ---- constellation
+    var net = new THREE.Group(); scene.add(net);
+    var dots = [], dotMats = [];
+    for (i = 0; i < N; i++) {
+      var mm = new THREE.MeshStandardMaterial({ roughness: 0.35, metalness: 0.1 });
+      var mesh = new THREE.Mesh(dotGeo, mm);
+      mesh.position.copy(pos[i]); mesh.scale.setScalar(0.028);
+      net.add(mesh); dots.push(mesh); dotMats.push(mm);
     }
-    lineGeo.setDrawRange(0, res.edges.length * 2);
-    lineGeo.attributes.position.needsUpdate = true;
-    lineGeo.attributes.color.needsUpdate = true;
+    var MAXE = N * 12;
+    var lineGeo = new THREE.BufferGeometry();
+    var lp = new Float32Array(MAXE * 6), lc = new Float32Array(MAXE * 6);
+    lineGeo.setAttribute("position", new THREE.BufferAttribute(lp, 3));
+    lineGeo.setAttribute("color", new THREE.BufferAttribute(lc, 3));
+    net.add(new THREE.LineSegments(lineGeo,
+      new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85 })));
+    var cc = new THREE.Color();
+    function paint(res) {
+      for (var n = 0; n < N; n++) {
+        var mat = dotMats[n];
+        if (!res.known[n]) {
+          mat.color.copy(STRANGER); mat.emissive.copy(STRANGER); mat.emissiveIntensity = 0.25;
+          dots[n].scale.setScalar(0.013);
+          continue;
+        }
+        var tr = TIERS[tier(res.mood[n])], col = TIER_COLORS[tier(res.mood[n])];
+        mat.color.copy(col).multiplyScalar(0.55); mat.emissive.copy(col); mat.emissiveIntensity = tr.glow;
+        dots[n].scale.setScalar(n === ME ? 0.052 : tr.size);
+      }
+      for (var q = 0; q < res.edges.length; q++) {
+        var a = res.edges[q][0], b = res.edges[q][1];
+        lp.set([pos[a].x,pos[a].y,pos[a].z,pos[b].x,pos[b].y,pos[b].z], q*6);
+        cc.copy(TIE_LOW).lerp(TIE_HIGH, Math.min(tier(res.mood[a]), tier(res.mood[b])) / 3);
+        lc.set([cc.r,cc.g,cc.b,cc.r,cc.g,cc.b], q*6);
+      }
+      lineGeo.setDrawRange(0, res.edges.length * 2);
+      lineGeo.attributes.position.needsUpdate = true;
+      lineGeo.attributes.color.needsUpdate = true;
+    }
+
+    var slider = document.getElementById(cfg.slider), verdict = document.getElementById(cfg.verdict);
+    function run(count) {
+      var res = simulate(count);
+      paint(res);
+      var v = cfg.word(count, res.mood[ME]);
+      verdict.textContent = v.word;
+      verdict.style.color = v.css;
+    }
+    slider.addEventListener("input", function(){ run(+slider.value); });
+    run(+slider.value);
+    return { net: net, el: document.getElementById(cfg.stage), phase: cfg.seed % 7 };
   }
 
-  var slider = document.getElementById("friends"), verdict = document.getElementById("verdict");
-  function run(count) {
-    var res = simulate(count);
-    paint(res);
-    var tr = TIERS[tier(res.mood[ME])];
-    verdict.textContent = tr.word;
-    verdict.style.color = tr.css;
-  }
-  slider.addEventListener("input", function(){ run(+slider.value); });
-  run(+slider.value);
+  var stages = [
+    buildStage({ stage: "stage",  slider: "friends", verdict: "verdict",  seed: 20260907,
+      word: function(count, mood){ var t = TIERS[tier(mood)]; return { word: t.word, css: t.css }; } }),
+    // the games card: five played so far, the rest of the room is games still worth exploring
+    buildStage({ stage: "stage2", slider: "games",   verdict: "verdict2", seed: 20261022,
+      word: function(count){
+        var w = count === 0 ? "all work" : count <= 2 ? "one more quest" : count <= 4 ? "hooked" : "fully immersed";
+        var t = TIERS[count === 0 ? 0 : count <= 2 ? 1 : count <= 4 ? 2 : 3];
+        return { word: w, css: t.css };
+      } })
+  ];
 
   // ---------------------------------------------------------------- paintings
   var VERT = [
@@ -758,7 +789,6 @@
   }
 
   // ---------------------------------------------------------------- frame
-  var stage = document.getElementById("stage");
   var ptr = { x:-9e9, y:-9e9 };
   window.addEventListener("pointermove", function(ev){ ptr.x = ev.clientX; ptr.y = ev.clientY; });
   window.addEventListener("pointerleave", function(){ ptr.x = ptr.y = -9e9; });
@@ -794,13 +824,15 @@
     if (Math.abs(vel) < 0.02) vel = 0;
     if (reduced) vel = 0;
 
-    // constellation → parked inside the stage card
-    var sr2 = stage.getBoundingClientRect();
-    net.visible = sr2.bottom > -200 && sr2.top < h + 200 && sr2.width > 2;
-    if (net.visible) {
-      net.position.set((sr2.left - cb.l) - w/2 + sr2.width/2, -((sr2.top - cb.t) - h/2 + sr2.height/2), 0);
-      net.scale.setScalar(Math.min(sr2.width * 0.34, sr2.height * 0.34));   // 1.28 * 0.34 keeps the widest point inside the card
-      if (!reduced) { net.rotation.y = t * 0.16; net.rotation.x = Math.sin(t*0.21)*0.14; }
+    // constellations → each parked inside its own card
+    for (var s2 = 0; s2 < stages.length; s2++) {
+      var st = stages[s2], net = st.net, sr2 = st.el.getBoundingClientRect();
+      net.visible = sr2.bottom > -200 && sr2.top < h + 200 && sr2.width > 2;
+      if (net.visible) {
+        net.position.set((sr2.left - cb.l) - w/2 + sr2.width/2, -((sr2.top - cb.t) - h/2 + sr2.height/2), 0);
+        net.scale.setScalar(Math.min(sr2.width * 0.34, sr2.height * 0.34));   // 1.28 * 0.34 keeps the widest point inside the card
+        if (!reduced) { net.rotation.y = t * 0.16 + st.phase; net.rotation.x = Math.sin(t*0.21 + st.phase)*0.14; }
+      }
     }
 
     for (var i2 = 0; i2 < planes.length; i2++) {
