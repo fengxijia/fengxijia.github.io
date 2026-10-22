@@ -88,8 +88,9 @@
 
   /* ---------- the 3D card ---------- */
   .midcol{display:flex;flex-direction:column;gap:14px;min-width:0;}
-  .c-stage{display:flex;flex-direction:column;flex:1;min-height:360px;padding:0;}
-  .stage-slot{flex:1;min-height:190px;position:relative;}
+  .c-stage{display:flex;flex-direction:column;flex:1;min-height:330px;padding:0;}
+  .midcol .c-stage + .c-stage{padding-bottom:18px;}   /* nudge the games card content up a little */
+  .stage-slot{flex:1;min-height:170px;position:relative;}
   .stage-foot{padding:0 26px 24px;text-align:center;}
   .stage-foot h3{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 0 5px;}
   .stage-foot p{color:var(--muted);font-size:13.5px;margin:0 0 16px;}
@@ -123,6 +124,9 @@
 
   /* ---------- lists ---------- */
   .c-latest{flex:1;padding:22px;}
+  @media (min-width:1041px){
+    .c-latest{max-height:calc(100vh - 14px * 4 - 141px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent;}
+  }
   .kick{
     font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
     color:var(--faint);margin:0 0 16px;
