@@ -348,7 +348,7 @@
       <div class="stage-slot" id="stage2" data-scene="games"></div>
       <div class="stage-foot">
         <h3>No work is really important 🤡</h3>
-        <p>Every man should play <b class="big">video games</b> 🤡</p>
+        <p>Every man should play <b class="big">video games</b> 🤗</p>
         <div class="ctl">
           <label for="games">Games</label>
           <input type="range" id="games" min="0" max="45" value="5" step="1" aria-describedby="verdict2">
@@ -730,7 +730,7 @@
     buildStage({ stage: "stage2", slider: "games",   verdict: "verdict2", seed: 20261022, k: 0,
       word: function(count){
         var i = count === 0 ? 0 : count <= 15 ? 1 : count < N - 1 ? 2 : 3;
-        var w = ["all work", "one more quest \uD83C\uDFAE", "hooked", "good as hell \uD83E\uDD2A"][i];
+        var w = ["all work \uD83D\uDE41", "one more quest \uD83C\uDFAE", "hooked", "good as hell \uD83E\uDD2A"][i];
         return { word: w, css: TIERS[i].css };
       } })
   ];
