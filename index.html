@@ -799,7 +799,7 @@
     net.visible = sr2.bottom > -200 && sr2.top < h + 200 && sr2.width > 2;
     if (net.visible) {
       net.position.set((sr2.left - cb.l) - w/2 + sr2.width/2, -((sr2.top - cb.t) - h/2 + sr2.height/2), 0);
-      net.scale.setScalar(Math.min(sr2.width * 0.44, sr2.height * 0.34));
+      net.scale.setScalar(Math.min(sr2.width * 0.34, sr2.height * 0.34));   // 1.28 * 0.34 keeps the widest point inside the card
       if (!reduced) { net.rotation.y = t * 0.16; net.rotation.x = Math.sin(t*0.21)*0.14; }
     }
 
