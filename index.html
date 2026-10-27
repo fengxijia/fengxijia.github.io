@@ -90,6 +90,12 @@
   .midcol{display:flex;flex-direction:column;gap:14px;min-width:0;}
   .c-stage{display:flex;flex-direction:column;flex:1;min-height:330px;padding:0;}
   .midcol .c-stage + .c-stage{padding-bottom:18px;}   /* nudge the games card content up a little */
+  .stage-tip{
+    position:absolute;transform:translate(-50%,-100%);pointer-events:none;white-space:nowrap;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--ink);
+    background:rgba(13,14,16,.94);border:1px solid var(--line-2);border-radius:6px;padding:4px 8px;
+  }
+  .stage-tip[hidden]{display:none;}
   .stage-slot{flex:1;min-height:170px;position:relative;}
   .stage-foot{padding:0 26px 24px;text-align:center;}
   .stage-foot h3{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 0 5px;}
@@ -635,6 +641,12 @@
     var order = []; for (i = 1; i < N; i++) order.push(i);   // the order people are met
     var sr = rng(cfg.seed + 78877);
     for (i = order.length-1; i > 0; i--){ var q = Math.floor(sr()*(i+1)), t = order[i]; order[i] = order[q]; order[q] = t; }
+    var label = null, tip = null, slot = document.getElementById(cfg.stage);
+    if (cfg.names) {                                           // the k-th dot to light up carries the k-th name
+      label = new Array(N);
+      for (i = 0; i < order.length; i++) label[order[i]] = cfg.names[i] || "";
+      tip = document.createElement("div"); tip.className = "stage-tip"; tip.hidden = true; slot.appendChild(tip);
+    }
 
     function simulate(count) {
       var known = new Array(N), adj = [], m = base.slice(), edges = [];
@@ -719,7 +731,7 @@
     }
     slider.addEventListener("input", function(){ run(+slider.value); });
     run(+slider.value);
-    return { net: net, el: document.getElementById(cfg.stage), phase: cfg.seed % 7 };
+    return { net: net, el: slot, phase: cfg.seed % 7, dots: dots, label: label, tip: tip };
   }
 
   var stages = [
@@ -728,6 +740,16 @@
     // the games card: ties run only from her to each game (radial), so at full count every
     // dot in the room is lit and wired to the middle. Five played so far, the rest still to explore.
     buildStage({ stage: "stage2", slider: "games",   verdict: "verdict2", seed: 20261022, k: 0,
+      names: [
+        "Kingdom Come: Deliverance II", "The Witcher 3", "Cyberpunk 2077", "The Blood of Dawnwalker", "Hogwarts Legacy",
+        "Baldur's Gate 3", "Overwatch", "Assassin's Creed", "GTA V", "Resident Evil", "Silent Hill",
+        "Elden Ring", "Red Dead Redemption 2", "Zelda: Breath of the Wild", "God of War", "Horizon Zero Dawn",
+        "Skyrim", "Dark Souls", "Bloodborne", "Sekiro", "Hades", "Stardew Valley", "Minecraft", "Portal 2",
+        "Half-Life 2", "Mass Effect", "Dragon Age", "Fallout: New Vegas", "Disco Elysium", "Death Stranding",
+        "The Last of Us", "Ghost of Tsushima", "Hollow Knight", "Celeste", "Persona 5", "Final Fantasy VII",
+        "NieR: Automata", "Monster Hunter", "Black Myth: Wukong", "Divinity: Original Sin 2", "Outer Wilds",
+        "Control", "Dishonored", "Civilization VI", "Detroit: Become Human"
+      ],
       word: function(count){
         var i = count === 0 ? 0 : count <= 15 ? 1 : count < N - 1 ? 2 : 3;
         var w = ["all work \uD83D\uDE41", "one more quest \uD83C\uDFAE", "hooked", "good as hell \uD83E\uDD2A"][i];
@@ -799,6 +821,24 @@
   // ---------------------------------------------------------------- frame
   var ptr = { x:-9e9, y:-9e9 };
   window.addEventListener("pointermove", function(ev){ ptr.x = ev.clientX; ptr.y = ev.clientY; });
+  window.addEventListener("pointerdown", function(ev){ ptr.x = ev.clientX; ptr.y = ev.clientY; });
+  var pv = new THREE.Vector3();
+  function hover(st, cb, w, h) {                  // show the name of the dot nearest the pointer, within 14px
+    if (!st.label) return;
+    var sr = st.el.getBoundingClientRect(), best = -1, bd = 14*14, bx = 0, by = 0;
+    if (st.net.visible && ptr.x >= sr.left && ptr.x <= sr.right && ptr.y >= sr.top && ptr.y <= sr.bottom) {
+      for (var n = 1; n < st.dots.length; n++) {
+        pv.setFromMatrixPosition(st.dots[n].matrixWorld).project(camera);
+        var sx = (pv.x + 1) / 2 * w + cb.l, sy = (1 - pv.y) / 2 * h + cb.t;
+        var d = (sx - ptr.x)*(sx - ptr.x) + (sy - ptr.y)*(sy - ptr.y);
+        if (d < bd) { bd = d; best = n; bx = sx; by = sy; }
+      }
+    }
+    if (best < 0) { st.tip.hidden = true; st.el.style.cursor = ""; return; }
+    st.tip.textContent = st.label[best];
+    st.tip.style.left = (bx - sr.left) + "px"; st.tip.style.top = (by - sr.top - 12) + "px";
+    st.tip.hidden = false; st.el.style.cursor = "crosshair";
+  }
   window.addEventListener("pointerleave", function(){ ptr.x = ptr.y = -9e9; });
 
   function box() {
@@ -841,6 +881,7 @@
         net.scale.setScalar(Math.min(sr2.width * 0.34, sr2.height * 0.34));   // 1.28 * 0.34 keeps the widest point inside the card
         if (!reduced) { net.rotation.y = t * 0.16 + st.phase; net.rotation.x = Math.sin(t*0.21 + st.phase)*0.14; }
       }
+      hover(st, cb, w, h);
     }
 
     for (var i2 = 0; i2 < planes.length; i2++) {
