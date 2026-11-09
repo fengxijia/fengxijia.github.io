@@ -357,7 +357,7 @@
         <p>Every man should play <b class="big">video games</b> 🤗</p>
         <div class="ctl">
           <label for="games">Games</label>
-          <input type="range" id="games" min="0" max="45" value="5" step="1" aria-describedby="verdict2">
+          <input type="range" id="games" min="0" max="45" value="6" step="1" aria-describedby="verdict2">
           <output id="verdict2">hooked</output>
         </div>
       </div>
@@ -382,6 +382,11 @@
 
       <section class="card c-latest">
         <p class="kick">Latest</p>
+        <div class="row">
+          <time>2026·11·07</time>
+          <div><div class="t">Finished Detroit: Become Human</div>
+            <div class="d">First playthrough: everyone died. Second run underway, this time everyone lives.</div></div>
+        </div>
         <div class="row">
           <time>2026·10·22</time>
           <div><div class="t">Finished The Blood of Dawnwalker</div>
@@ -742,13 +747,13 @@
     buildStage({ stage: "stage2", slider: "games",   verdict: "verdict2", seed: 20261022, k: 0,
       names: [
         "Kingdom Come: Deliverance II", "The Witcher 3", "Cyberpunk 2077", "The Blood of Dawnwalker", "Hogwarts Legacy",
-        "Baldur's Gate 3", "Overwatch", "Assassin's Creed", "GTA V", "Resident Evil", "Silent Hill",
+        "Detroit: Become Human", "Baldur's Gate 3", "Overwatch", "Assassin's Creed", "GTA V", "Resident Evil", "Silent Hill",
         "Elden Ring", "Red Dead Redemption 2", "Zelda: Breath of the Wild", "God of War", "Horizon Zero Dawn",
         "Skyrim", "Dark Souls", "Bloodborne", "Sekiro", "Hades", "Stardew Valley", "Minecraft", "Portal 2",
         "Half-Life 2", "Mass Effect", "Dragon Age", "Fallout: New Vegas", "Disco Elysium", "Death Stranding",
         "The Last of Us", "Ghost of Tsushima", "Hollow Knight", "Celeste", "Persona 5", "Final Fantasy VII",
         "NieR: Automata", "Monster Hunter", "Black Myth: Wukong", "Divinity: Original Sin 2", "Outer Wilds",
-        "Control", "Dishonored", "Civilization VI", "Detroit: Become Human"
+        "Control", "Dishonored", "Civilization VI", "Outer Worlds"
       ],
       word: function(count){
         var i = count === 0 ? 0 : count <= 15 ? 1 : count < N - 1 ? 2 : 3;
